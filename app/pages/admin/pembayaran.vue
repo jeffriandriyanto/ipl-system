@@ -13,114 +13,263 @@
       </div>
     </div>
 
-    <!-- Input Form -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-      <h2 class="text-lg font-semibold mb-4">Input Pembayaran Baru</h2>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="text-sm font-medium mb-1 block">Rumah</label>
-          <select
-            v-model="form.rumah_id"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="">Pilih Rumah</option>
-            <option v-for="r in rumahList" :key="r.id" :value="r.id">
-              {{ r.blok }}-{{ r.nomor }} ({{ r.pic_nama || '-' }})
-            </option>
-          </select>
+    <!-- Input Mode Toggle -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+      <div class="flex gap-2 mb-4">
+        <button
+          class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          :class="inputMode === 'single' 
+            ? 'bg-primary-600 text-white' 
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+          @click="inputMode = 'single'"
+        >
+          Single Periode
+        </button>
+        <button
+          class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          :class="inputMode === 'multi' 
+            ? 'bg-primary-600 text-white' 
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+          @click="inputMode = 'multi'"
+        >
+          Multi Periode
+        </button>
+      </div>
+
+      <!-- Single Periode Form -->
+      <form v-if="inputMode === 'single'" @submit.prevent="simpanSingle" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm font-medium mb-1 block">Rumah</label>
+            <select
+              v-model="form.rumah_id"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              required
+            >
+              <option value="">Pilih Rumah</option>
+              <option v-for="r in rumahList" :key="r.id" :value="r.id">
+                {{ r.blok }}-{{ r.nomor }} ({{ r.pic_nama || '-' }})
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-sm font-medium mb-1 block">Periode</label>
+            <select
+              v-model="form.periode"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              required
+            >
+              <option value="">Pilih Periode</option>
+              <option v-for="p in availablePeriodes" :key="p.periode" :value="p.periode">
+                {{ formatPeriode(p.periode) }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-sm font-medium mb-1 block">Jumlah Bayar (Rp)</label>
+            <input
+              v-model.number="form.jumlah"
+              type="number"
+              placeholder="0"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium mb-1 block">Tanggal Bayar</label>
+            <input
+              v-model="form.tanggal"
+              type="date"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium mb-1 block">Metode</label>
+            <select
+              v-model="form.metode"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="transfer">Transfer</option>
+              <option value="cash">Cash</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-sm font-medium mb-1 block">Keterangan</label>
+            <input
+              v-model="form.keterangan"
+              type="text"
+              placeholder="Opsional"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
         </div>
 
-        <div>
-          <label class="text-sm font-medium mb-1 block">Periode</label>
-          <select
-            v-model="form.periode"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="">Pilih Periode</option>
-            <option v-for="p in periodeList" :key="p.periode" :value="p.periode">
-              {{ p.periode }}
-            </option>
-          </select>
+        <!-- Tagihan Info -->
+        <div v-if="selectedTagihan" class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p class="text-sm text-gray-500">Total Tagihan</p>
+              <p class="text-lg font-bold">{{ formatRupiah(selectedTagihan.total_tagihan) }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Sudah Bayar</p>
+              <p class="text-lg font-bold">{{ formatRupiah(selectedTagihan.total_bayar) }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Sisa Tagihan</p>
+              <p class="text-lg font-bold text-red-600">{{ formatRupiah(Math.max(0, selectedTagihan.total_tagihan - selectedTagihan.total_bayar)) }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Status</p>
+              <span
+                class="px-2 py-1 rounded-full text-xs font-medium"
+                :class="getStatusColor(selectedTagihan.status)"
+              >
+                {{ getStatusText(selectedTagihan.status) }}
+              </span>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <label class="text-sm font-medium mb-1 block">Jumlah Bayar (Rp)</label>
-          <input
-            v-model.number="form.jumlah"
-            type="number"
-            placeholder="0"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+        <div class="flex justify-end">
+          <UButton
+            type="submit"
+            label="Simpan Pembayaran"
+            icon="i-lucide-check"
+            :loading="saving"
+            :disabled="!form.rumah_id || !form.periode || !form.jumlah"
           />
         </div>
+      </form>
 
-        <div>
-          <label class="text-sm font-medium mb-1 block">Tanggal Bayar</label>
-          <input
-            v-model="form.tanggal"
-            type="date"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
+      <!-- Multi Periode Form -->
+      <form v-if="inputMode === 'multi'" @submit.prevent="simpanMulti" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm font-medium mb-1 block">Rumah</label>
+            <select
+              v-model="multiForm.rumah_id"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              required
+              @change="fetchUnpaidPeriodes"
+            >
+              <option value="">Pilih Rumah</option>
+              <option v-for="r in rumahList" :key="r.id" :value="r.id">
+                {{ r.blok }}-{{ r.nomor }} ({{ r.pic_nama || '-' }})
+              </option>
+            </select>
+          </div>
 
-        <div>
-          <label class="text-sm font-medium mb-1 block">Metode</label>
-          <select
-            v-model="form.metode"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="transfer">Transfer</option>
-            <option value="cash">Cash</option>
-          </select>
+          <div>
+            <label class="text-sm font-medium mb-1 block">Total Bayar (Rp)</label>
+            <input
+              v-model.number="multiForm.jumlah"
+              type="number"
+              placeholder="0"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium mb-1 block">Tanggal Bayar</label>
+            <input
+              v-model="multiForm.tanggal"
+              type="date"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium mb-1 block">Metode</label>
+            <select
+              v-model="multiForm.metode"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="transfer">Transfer</option>
+              <option value="cash">Cash</option>
+            </select>
+          </div>
         </div>
 
         <div>
           <label class="text-sm font-medium mb-1 block">Keterangan</label>
           <input
-            v-model="form.keterangan"
+            v-model="multiForm.keterangan"
             type="text"
             placeholder="Opsional"
             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
-      </div>
 
-      <!-- Tagihan Info -->
-      <div v-if="selectedTagihan" class="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <p class="text-sm text-gray-500">Total Tagihan</p>
-            <p class="text-lg font-bold">{{ formatRupiah(selectedTagihan.total_tagihan) }}</p>
-          </div>
-          <div>
-            <p class="text-sm text-gray-500">Sudah Bayar</p>
-            <p class="text-lg font-bold">{{ formatRupiah(selectedTagihan.total_bayar) }}</p>
-          </div>
-          <div>
-            <p class="text-sm text-gray-500">Sisa Tagihan</p>
-            <p class="text-lg font-bold text-red-600">{{ formatRupiah(Math.max(0, selectedTagihan.total_tagihan - selectedTagihan.total_bayar)) }}</p>
-          </div>
-          <div>
-            <p class="text-sm text-gray-500">Status</p>
-            <span
-              class="px-2 py-1 rounded-full text-xs font-medium"
-              :class="getStatusColor(selectedTagihan.status)"
+        <!-- Periode Selection -->
+        <div v-if="unpaidPeriodes.length > 0">
+          <label class="text-sm font-medium mb-2 block">Pilih Periode yang Akan Dibayar:</label>
+          <div class="space-y-2">
+            <label
+              v-for="item in unpaidPeriodes"
+              :key="item.periode"
+              class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+              :class="{ 'border-primary-500 bg-primary-50 dark:bg-primary-900/20': multiForm.periodes.includes(item.periode) }"
             >
-              {{ getStatusText(selectedTagihan.status) }}
-            </span>
+              <input
+                type="checkbox"
+                :value="item.periode"
+                v-model="multiForm.periodes"
+                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              />
+              <div class="flex-1">
+                <p class="font-medium">{{ formatPeriode(item.periode) }}</p>
+                <p class="text-sm text-gray-500">
+                  Tagihan: {{ formatRupiah(item.total_tagihan) }} | 
+                  Sudah Bayar: {{ formatRupiah(item.total_bayar) }} | 
+                  <span class="text-red-600 font-medium">Kurang: {{ formatRupiah(item.sisa) }}</span>
+                </p>
+              </div>
+            </label>
           </div>
         </div>
-      </div>
 
-      <div class="mt-4 flex justify-end">
-        <UButton
-          label="Simpan Pembayaran"
-          icon="i-lucide-check"
-          :loading="saving"
-          :disabled="!form.rumah_id || !form.periode || !form.jumlah"
-          @click="simpanPembayaran"
-        />
-      </div>
+        <!-- Allocation Preview -->
+        <div v-if="multiForm.periodes.length > 0 && multiForm.jumlah > 0" class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <p class="font-semibold text-blue-800 dark:text-blue-200 mb-2">Alokasi Pembayaran:</p>
+          <div class="space-y-1">
+            <div
+              v-for="alloc in allocationPreview"
+              :key="alloc.periode"
+              class="flex justify-between text-sm"
+            >
+              <span>{{ formatPeriode(alloc.periode) }}</span>
+              <span class="font-medium">{{ formatRupiah(alloc.alokasi) }}</span>
+            </div>
+            <div class="pt-2 mt-2 border-t border-blue-200 dark:border-blue-700 flex justify-between font-semibold">
+              <span>Total</span>
+              <span>{{ formatRupiah(totalAlokasi) }}</span>
+            </div>
+            <div v-if="sisaBayar > 0" class="flex justify-between text-sm text-orange-600">
+              <span>Sisa (Saldo Lebih)</span>
+              <span>{{ formatRupiah(sisaBayar) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <UButton
+            type="submit"
+            label="Simpan Pembayaran Multi-Periode"
+            icon="i-lucide-check"
+            :loading="saving"
+            :disabled="multiForm.periodes.length === 0 || !multiForm.jumlah"
+          />
+        </div>
+      </form>
     </div>
 
     <!-- Recent Payments -->
@@ -148,7 +297,7 @@
             >
               <td class="p-3 text-sm">{{ formatDate(item.tanggal) }}</td>
               <td class="p-3 font-medium">{{ item.rumah?.blok }}-{{ item.rumah?.nomor }}</td>
-              <td class="p-3 text-sm">{{ item.periode }}</td>
+              <td class="p-3 text-sm">{{ formatPeriode(item.periode) }}</td>
               <td class="p-3 text-sm text-right font-medium">{{ formatRupiah(item.jumlah) }}</td>
               <td class="p-3">
                 <span
@@ -170,15 +319,16 @@
     </div>
 
     <!-- Upload Modal -->
-    <UModal v-model="showUpload">
-      <div class="p-6">
-        <h2 class="text-xl font-bold mb-4">Upload Excel Pembayaran</h2>
-        <UploadExcel v-model="uploadFile" />
-        <div class="flex justify-end gap-2 mt-4">
+    <UModal v-model:open="showUpload" title="Upload Excel Pembayaran">
+      <template #body>
+        <UploadExcel v-model="uploadFile" @parsed="handleUploadParsed" />
+      </template>
+      <template #footer>
+        <div class="flex justify-end gap-2">
           <UButton label="Batal" variant="ghost" @click="showUpload = false" />
           <UButton label="Upload" :loading="uploading" @click="handleUpload" />
         </div>
-      </div>
+      </template>
     </UModal>
   </div>
 </template>
@@ -190,14 +340,17 @@ definePageMeta({
 
 const tenantId = 'waris1'
 
+const inputMode = ref('single')
 const rumahList = ref([])
-const periodeList = ref([])
+const availablePeriodes = ref([])
+const unpaidPeriodes = ref([])
 const pembayaranList = ref([])
 const selectedTagihan = ref(null)
 const saving = ref(false)
 const showUpload = ref(false)
 const uploadFile = ref(null)
 const uploading = ref(false)
+const uploadData = ref([])
 
 const form = reactive({
   rumah_id: '',
@@ -208,7 +361,26 @@ const form = reactive({
   keterangan: ''
 })
 
+const multiForm = reactive({
+  rumah_id: '',
+  jumlah: 0,
+  tanggal: new Date().toISOString().slice(0, 10),
+  metode: 'transfer',
+  keterangan: '',
+  periodes: []
+})
+
 const { formatRupiah, getStatusColor, getStatusText } = useBilling()
+
+const months = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+]
+
+function formatPeriode(periode) {
+  const [year, month] = periode.split('-')
+  return `${months[parseInt(month) - 1]} ${year}`
+}
 
 function formatDate(date) {
   return new Date(date).toLocaleDateString('id-ID', {
@@ -217,6 +389,39 @@ function formatDate(date) {
     year: 'numeric'
   })
 }
+
+// Calculate allocation preview for multi-periode
+const allocationPreview = computed(() => {
+  if (!multiForm.periodes.length || !multiForm.jumlah) return []
+
+  let sisa = multiForm.jumlah
+  const allocations = []
+
+  // Sort periods
+  const sortedPeriodes = [...multiForm.periodes].sort()
+
+  for (const periode of sortedPeriodes) {
+    const tagihan = unpaidPeriodes.value.find(t => t.periode === periode)
+    if (!tagihan) continue
+
+    const alokasi = Math.min(sisa, tagihan.sisa)
+    allocations.push({
+      periode,
+      alokasi
+    })
+    sisa -= alokasi
+  }
+
+  return allocations
+})
+
+const totalAlokasi = computed(() => {
+  return allocationPreview.value.reduce((sum, a) => sum + a.alokasi, 0)
+})
+
+const sisaBayar = computed(() => {
+  return Math.max(0, multiForm.jumlah - totalAlokasi.value)
+})
 
 async function fetchRumah() {
   try {
@@ -227,15 +432,48 @@ async function fetchRumah() {
   }
 }
 
-async function fetchPeriode() {
+async function fetchPeriodes() {
   try {
-    // TODO: fetch from API
-    periodeList.value = [
-      { periode: '2026-07' },
-      { periode: '2026-08' }
-    ]
+    const data = await $fetch(`/api/tutup-buku?tenant_id=${tenantId}`)
+    availablePeriodes.value = data.filter(p => p.status === 'draft')
   } catch (error) {
-    console.error('Error fetching periode:', error)
+    console.error('Error fetching periodes:', error)
+  }
+}
+
+async function fetchUnpaidPeriodes() {
+  if (!multiForm.rumah_id) {
+    unpaidPeriodes.value = []
+    return
+  }
+
+  try {
+    // Get all periods
+    const allPeriodes = await $fetch(`/api/tutup-buku?tenant_id=${tenantId}`)
+    
+    // Get tagihan for this rumah
+    const unpaid = []
+    for (const periode of allPeriodes) {
+      try {
+        const tagihanData = await $fetch(`/api/tagihan?tenant_id=${tenantId}&periode=${periode.periode}`)
+        const tagihan = tagihanData.data?.find(t => t.rumah_id === multiForm.rumah_id)
+        
+        if (tagihan && (tagihan.status === 'belum_bayar' || tagihan.status === 'kurang')) {
+          unpaid.push({
+            periode: periode.periode,
+            total_tagihan: tagihan.total_tagihan,
+            total_bayar: tagihan.total_bayar,
+            sisa: Math.max(0, tagihan.total_tagihan - tagihan.total_bayar)
+          })
+        }
+      } catch {
+        // Skip if error
+      }
+    }
+    
+    unpaidPeriodes.value = unpaid
+  } catch (error) {
+    console.error('Error fetching unpaid periodes:', error)
   }
 }
 
@@ -268,7 +506,7 @@ async function fetchTagihanInfo() {
   }
 }
 
-async function simpanPembayaran() {
+async function simpanSingle() {
   saving.value = true
   try {
     await $fetch('/api/pembayaran', {
@@ -299,9 +537,99 @@ async function simpanPembayaran() {
   }
 }
 
-function handleUpload() {
-  // TODO: implement Excel upload
-  alert('Fitur upload Excel belum diimplementasikan')
+async function simpanMulti() {
+  saving.value = true
+  try {
+    const result = await $fetch('/api/pembayaran/batch', {
+      method: 'POST',
+      body: {
+        tenant_id: tenantId,
+        rumah_id: multiForm.rumah_id,
+        periodes: multiForm.periodes,
+        jumlah: multiForm.jumlah,
+        tanggal: multiForm.tanggal,
+        metode: multiForm.metode,
+        keterangan: multiForm.keterangan
+      }
+    })
+
+    let message = result.message
+    if (result.data.sisa > 0) {
+      message += `\nSisa Rp ${formatRupiah(result.data.sisa)} akan menjadi saldo lebih`
+    }
+    alert(message)
+
+    multiForm.rumah_id = ''
+    multiForm.jumlah = 0
+    multiForm.keterangan = ''
+    multiForm.periodes = []
+    unpaidPeriodes.value = []
+    
+    await fetchPembayaran()
+  } catch (error) {
+    alert(error.data?.message || 'Gagal menyimpan pembayaran')
+  } finally {
+    saving.value = false
+  }
+}
+
+function handleUploadParsed(data) {
+  uploadData.value = data
+}
+
+async function handleUpload() {
+  if (uploadData.value.length === 0) {
+    alert('Tidak ada data untuk diupload')
+    return
+  }
+
+  uploading.value = true
+  try {
+    // Process each row
+    let success = 0
+    let failed = 0
+
+    for (const row of uploadData.value) {
+      try {
+        // Find rumah by blok and nomor
+        const rumah = rumahList.value.find(r => 
+          r.blok === row['BLOK'] && r.nomor === String(row['NO RUMAH'])
+        )
+
+        if (!rumah) {
+          failed++
+          continue
+        }
+
+        await $fetch('/api/pembayaran', {
+          method: 'POST',
+          body: {
+            tenant_id: tenantId,
+            rumah_id: rumah.id,
+            periode: row['PERIODE'],
+            jumlah: row['BAYAR RP'],
+            tanggal: new Date().toISOString().slice(0, 10),
+            metode: row['METODE'] || 'transfer',
+            keterangan: row['KETERANGAN'] || ''
+          }
+        })
+        success++
+      } catch {
+        failed++
+      }
+    }
+
+    alert(`Upload selesai: ${success} berhasil, ${failed} gagal`)
+    showUpload.value = false
+    uploadFile.value = null
+    uploadData.value = []
+    
+    await fetchPembayaran()
+  } catch (error) {
+    alert('Gagal upload pembayaran')
+  } finally {
+    uploading.value = false
+  }
 }
 
 // Watch for changes
@@ -311,7 +639,7 @@ watch(() => [form.rumah_id, form.periode], () => {
 
 onMounted(() => {
   fetchRumah()
-  fetchPeriode()
+  fetchPeriodes()
   fetchPembayaran()
 })
 </script>
