@@ -159,7 +159,7 @@ definePageMeta({
   layout: 'admin'
 })
 
-const tenantId = 'waris1'
+const { tenantId } = useTenant()
 
 const users = ref([])
 const showForm = ref(false)

@@ -267,7 +267,7 @@ definePageMeta({
   layout: 'admin'
 })
 
-const tenantId = 'waris1'
+const { tenantId } = useTenant()
 
 const rumah = ref([])
 const kategoriList = ref([])

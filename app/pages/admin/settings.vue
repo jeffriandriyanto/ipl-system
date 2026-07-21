@@ -11,7 +11,7 @@
         :key="tab.id"
         class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         :class="activeTab === tab.id 
-          ? 'bg-primary-600 text-white' 
+          ? 'bg-green-600 text-white' 
           : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
         @click="activeTab = tab.id"
       >
@@ -29,7 +29,7 @@
           <input
             v-model="form.nama_aplikasi"
             type="text"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
           />
         </div>
 
@@ -38,7 +38,7 @@
           <input
             v-model="form.nama_perumahan"
             type="text"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
           />
         </div>
 
@@ -47,7 +47,7 @@
           <textarea
             v-model="form.alamat"
             rows="2"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
           />
         </div>
 
@@ -57,14 +57,26 @@
             v-model="form.kontak"
             type="text"
             placeholder="0812xxxx"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
           />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Info Pembayaran</label>
+          <textarea
+            v-model="form.payment_info"
+            rows="3"
+            placeholder="Transfer ke BCA xxx a.n Bendahara"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          <p class="text-xs text-gray-500 mt-1">Info ini akan tampil di halaman cek tagihan warga</p>
         </div>
 
         <div class="pt-4">
           <UButton
             type="submit"
             label="Simpan"
+            color="green"
             :loading="saving"
           />
         </div>
@@ -82,7 +94,7 @@
             v-model="whiteLabel.logo"
             type="url"
             placeholder="https://example.com/logo.png"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
           />
           <p class="text-xs text-gray-500 mt-1">URL gambar logo perumahan</p>
         </div>
@@ -99,7 +111,7 @@
               <input
                 v-model="whiteLabel.primary_color"
                 type="text"
-                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
           </div>
@@ -115,7 +127,7 @@
               <input
                 v-model="whiteLabel.secondary_color"
                 type="text"
-                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
           </div>
@@ -127,7 +139,7 @@
             v-model="whiteLabel.footer_text"
             type="text"
             placeholder="© 2026 Perumahan xxx"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
           />
         </div>
 
@@ -146,6 +158,7 @@
           <UButton
             type="submit"
             label="Simpan"
+            color="green"
             :loading="savingWhiteLabel"
           />
         </div>
@@ -159,11 +172,11 @@
       <div class="space-y-3">
         <div class="flex justify-between py-2 border-b">
           <span class="text-gray-500">Tenant ID</span>
-          <span class="font-mono">waris1</span>
+          <span class="font-mono">{{ tenantId }}</span>
         </div>
         <div class="flex justify-between py-2 border-b">
           <span class="text-gray-500">Domain</span>
-          <span class="font-mono">ipl-system.netlify.app</span>
+          <span class="font-mono">{{ tenantDomain }}</span>
         </div>
         <div class="flex justify-between py-2 border-b">
           <span class="text-gray-500">Database</span>
@@ -187,7 +200,7 @@ definePageMeta({
   layout: 'admin'
 })
 
-const tenantId = 'waris1'
+const { tenantId, tenantDomain } = useTenant()
 const activeTab = ref('umum')
 const saving = ref(false)
 const savingWhiteLabel = ref(false)
@@ -202,21 +215,28 @@ const form = reactive({
   nama_aplikasi: 'IPL Perumahan Waris 1',
   nama_perumahan: 'Perumahan Waris 1',
   alamat: '',
-  kontak: ''
+  kontak: '',
+  payment_info: ''
 })
 
 const whiteLabel = reactive({
   logo: '',
-  primary_color: '#2563EB',
-  secondary_color: '#1E40AF',
+  primary_color: '#16A34A',
+  secondary_color: '#15803D',
   footer_text: '© 2026 IPL Perumahan Waris 1',
   domain: 'ipl-system.netlify.app'
 })
 
 async function fetchSettings() {
   try {
-    // TODO: fetch from API
-    // For now, use default values
+    const data = await $fetch(`/api/settings?tenant_id=${tenantId}`)
+    if (data) {
+      form.nama_aplikasi = data.nama_aplikasi || form.nama_aplikasi
+      form.nama_perumahan = data.nama_perumahan || form.nama_perumahan
+      form.alamat = data.alamat || ''
+      form.kontak = data.kontak || ''
+      form.payment_info = data.payment_info || ''
+    }
   } catch (error) {
     console.error('Error fetching settings:', error)
   }
@@ -225,8 +245,10 @@ async function fetchSettings() {
 async function saveSettings() {
   saving.value = true
   try {
-    // TODO: save to API
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await $fetch('/api/settings', {
+      method: 'POST',
+      body: { tenant_id: tenantId, ...form }
+    })
     alert('Pengaturan berhasil disimpan')
   } catch (error) {
     alert('Gagal menyimpan pengaturan')
@@ -238,8 +260,10 @@ async function saveSettings() {
 async function saveWhiteLabel() {
   savingWhiteLabel.value = true
   try {
-    // TODO: save to API
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await $fetch('/api/settings', {
+      method: 'POST',
+      body: { tenant_id: tenantId, ...whiteLabel }
+    })
     alert('Konfigurasi white-label berhasil disimpan')
   } catch (error) {
     alert('Gagal menyimpan konfigurasi')

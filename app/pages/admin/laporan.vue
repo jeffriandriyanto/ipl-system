@@ -186,7 +186,7 @@ definePageMeta({
   layout: 'admin'
 })
 
-const tenantId = 'waris1'
+const { tenantId } = useTenant()
 const selectedPeriode = ref(new Date().toISOString().slice(0, 7))
 const loading = ref(false)
 const previewTitle = ref('')

@@ -5,14 +5,15 @@
     </div>
 
     <!-- Info -->
-    <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 rounded-lg p-4 mb-6">
+    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 rounded-lg p-4 mb-6">
       <div class="flex items-start gap-3">
-        <UIcon name="i-lucide-alert-triangle" class="text-yellow-600 text-xl mt-0.5" />
+        <UIcon name="i-lucide-info" class="text-blue-600 text-xl mt-0.5" />
         <div>
-          <p class="font-semibold text-yellow-800">Perhatian!</p>
-          <p class="text-sm text-yellow-700 mt-1">
-            Tutup buku akan mengunci periode dan tidak bisa diubah lagi. 
-            Pastikan semua data sudah benar sebelum menutup buku.
+          <p class="font-semibold text-blue-800">Alur Periode</p>
+          <p class="text-sm text-blue-700 mt-1">
+            <span class="font-medium">Draft</span> → Input meteran & generate tagihan → 
+            <span class="font-medium">Publish</span> → Warga bisa cek tagihan → 
+            <span class="font-medium">Tutup</span> → Data terkunci
           </p>
         </div>
       </div>
@@ -35,9 +36,9 @@
             </div>
             <span
               class="px-3 py-1 rounded-full text-sm font-medium"
-              :class="item.status === 'ditutup' ? 'bg-gray-100 text-gray-800' : 'bg-green-100 text-green-800'"
+              :class="statusClass(item.status)"
             >
-              {{ item.status === 'ditutup' ? 'Ditutup' : 'Draft' }}
+              {{ statusLabel(item.status) }}
             </span>
           </div>
 
@@ -59,26 +60,47 @@
             </div>
           </div>
 
-          <!-- Action -->
-          <div v-if="item.status === 'draft'" class="mt-4 pt-4 border-t">
-            <div class="flex justify-between items-center">
-              <p class="text-sm text-gray-500">
-                Ditutup pada: -
-              </p>
+          <!-- Action Buttons -->
+          <div class="mt-4 pt-4 border-t flex justify-between items-center">
+            <p class="text-sm text-gray-500">
+              <template v-if="item.status === 'draft'">
+                Status: Draft (belum visible untuk warga)
+              </template>
+              <template v-else-if="item.status === 'published'">
+                Dipublish • Belum ditutup
+              </template>
+              <template v-else>
+                Ditutup pada: {{ formatDate(item.ditutup_pada) }}
+              </template>
+            </p>
+
+            <div class="flex gap-2">
+              <!-- Publish Button (only for draft) -->
               <UButton
+                v-if="item.status === 'draft'"
+                label="Publish"
+                icon="i-lucide-send"
+                color="green"
+                :loading="processing === item.periode + '-publish'"
+                @click="publishPeriode(item)"
+              />
+
+              <!-- Tutup Button (only for published) -->
+              <UButton
+                v-if="item.status === 'published'"
                 label="Tutup Buku"
                 icon="i-lucide-lock"
                 color="red"
-                :loading="closing === item.periode"
+                :loading="processing === item.periode + '-tutup'"
                 @click="tutupBuku(item)"
               />
-            </div>
-          </div>
 
-          <div v-else class="mt-4 pt-4 border-t">
-            <p class="text-sm text-gray-500">
-              Ditutup pada: {{ formatDate(item.ditutup_pada) }}
-            </p>
+              <!-- Status indicator for closed -->
+              <span v-if="item.status === 'ditutup'" class="flex items-center gap-1 text-sm text-gray-500">
+                <UIcon name="i-lucide-lock" class="text-green-600" />
+                Terkunci
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -95,19 +117,19 @@ definePageMeta({
   layout: 'admin'
 })
 
-const tenantId = 'waris1'
-
+const { tenantId } = useTenant()
 const periodes = ref([])
-const closing = ref(null)
+const processing = ref(null)
 
 const { formatRupiah } = useBilling()
 
+const months = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+]
+
 function formatPeriode(periode) {
   const [year, month] = periode.split('-')
-  const months = [
-    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-  ]
   return `${months[parseInt(month) - 1]} ${year}`
 }
 
@@ -122,6 +144,24 @@ function formatDate(date) {
   })
 }
 
+function statusClass(status) {
+  switch (status) {
+    case 'draft': return 'bg-yellow-100 text-yellow-800'
+    case 'published': return 'bg-blue-100 text-blue-800'
+    case 'ditutup': return 'bg-gray-100 text-gray-800'
+    default: return 'bg-gray-100 text-gray-800'
+  }
+}
+
+function statusLabel(status) {
+  switch (status) {
+    case 'draft': return 'Draft'
+    case 'published': return 'Published'
+    case 'ditutup': return 'Ditutup'
+    default: return status
+  }
+}
+
 async function fetchPeriodes() {
   try {
     const data = await $fetch(`/api/tutup-buku?tenant_id=${tenantId}`)
@@ -131,26 +171,49 @@ async function fetchPeriodes() {
   }
 }
 
-async function tutupBuku(item) {
+async function publishPeriode(item) {
   const confirmed = confirm(
-    `Anda yakin ingin menutup buku periode ${formatPeriode(item.periode)}?\n\n` +
-    `Tindakan ini TIDAK BISA dibatalkan!`
+    `Publish tagihan periode ${formatPeriode(item.periode)}?\n\n` +
+    `Setelah publish, warga sudah bisa melihat tagihan mereka.`
   )
 
   if (!confirmed) return
 
-  closing.value = item.periode
+  processing.value = item.periode + '-publish'
   try {
-    await $fetch(`/api/tutup-buku/${item.periode}`, {
+    const result = await $fetch(`/api/tutup-buku/${item.periode}/action`, {
       method: 'POST',
-      body: { tenant_id: tenantId }
+      body: { tenant_id: tenantId, action: 'publish' }
     })
-    alert(`Periode ${formatPeriode(item.periode)} berhasil ditutup`)
+    alert(result.message)
+    await fetchPeriodes()
+  } catch (error) {
+    alert(error.data?.message || 'Gagal publish periode')
+  } finally {
+    processing.value = null
+  }
+}
+
+async function tutupBuku(item) {
+  const confirmed = confirm(
+    `Tutup buku periode ${formatPeriode(item.periode)}?\n\n` +
+    `Tindakan ini TIDAK BISA dibatalkan! Data akan terkunci permanen.`
+  )
+
+  if (!confirmed) return
+
+  processing.value = item.periode + '-tutup'
+  try {
+    const result = await $fetch(`/api/tutup-buku/${item.periode}/action`, {
+      method: 'POST',
+      body: { tenant_id: tenantId, action: 'tutup' }
+    })
+    alert(result.message)
     await fetchPeriodes()
   } catch (error) {
     alert(error.data?.message || 'Gagal menutup periode')
   } finally {
-    closing.value = null
+    processing.value = null
   }
 }
 

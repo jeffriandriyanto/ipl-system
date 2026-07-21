@@ -128,7 +128,7 @@ definePageMeta({
   layout: 'admin'
 })
 
-const tenantId = 'waris1'
+const { tenantId } = useTenant()
 
 const logs = ref([])
 const pagination = ref({ page: 1, limit: 50, total: 0, totalPages: 0 })
