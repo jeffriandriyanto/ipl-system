@@ -24,10 +24,20 @@ export const useAuth = () => {
 
   const isAuthenticated = computed(() => !!user.value)
 
+  // Check session on mount
+  const checkSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      user.value = session.user
+    }
+    return !!session
+  }
+
   return {
     user,
     login,
     logout,
-    isAuthenticated
+    isAuthenticated,
+    checkSession
   }
 }

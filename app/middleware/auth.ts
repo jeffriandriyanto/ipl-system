@@ -1,14 +1,15 @@
-export default defineNuxtRouteMiddleware((to) => {
+export default defineNuxtRouteMiddleware(async (to) => {
   // Skip middleware for public routes
   if (to.path === '/cek-tagihan' || to.path === '/login' || to.path === '/') {
     return
   }
 
-  // Check if user is authenticated (simplified for now)
-  // In production, this should check Supabase auth
-  const isAuthenticated = true // TODO: implement proper auth check
-
-  if (!isAuthenticated) {
+  // Check if user is authenticated
+  const { checkSession, isAuthenticated } = useAuth()
+  
+  const isLoggedIn = await checkSession()
+  
+  if (!isLoggedIn) {
     return navigateTo('/login')
   }
 })
