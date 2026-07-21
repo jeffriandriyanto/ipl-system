@@ -1,11 +1,4 @@
-/**
- * Client-side billing utility
- */
-
 export const useBilling = () => {
-  /**
-   * Format currency to Rupiah
-   */
   const formatRupiah = (amount: number): string => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -15,16 +8,10 @@ export const useBilling = () => {
     }).format(amount)
   }
 
-  /**
-   * Parse Rupiah string to number
-   */
   const parseRupiah = (rupiah: string): number => {
     return parseInt(rupiah.replace(/[^0-9]/g, ''), 10) || 0
   }
 
-  /**
-   * Calculate bill for meteran
-   */
   const hitungMeteran = (
     meterLalu: number,
     meterSekarang: number,
@@ -41,9 +28,6 @@ export const useBilling = () => {
     return minimumTarif + (kelebihan * tarifPerM3)
   }
 
-  /**
-   * Get status color class
-   */
   const getStatusColor = (status: string): string => {
     switch (status) {
       case 'lunas':
@@ -59,9 +43,6 @@ export const useBilling = () => {
     }
   }
 
-  /**
-   * Get status text
-   */
   const getStatusText = (status: string, selisih?: number): string => {
     switch (status) {
       case 'lunas':

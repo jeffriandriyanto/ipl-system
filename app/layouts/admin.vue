@@ -3,7 +3,7 @@
     <!-- Sidebar -->
     <aside class="fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-transform -translate-x-full lg:translate-x-0">
       <div class="flex items-center justify-center h-16 border-b border-gray-200 dark:border-gray-700">
-        <h1 class="text-xl font-bold text-primary-600">{{ appName }}</h1>
+        <h1 class="text-xl font-bold text-primary-600">IPL System</h1>
       </div>
       
       <nav class="p-4 space-y-1">
@@ -15,7 +15,6 @@
           :label="item.label"
           variant="ghost"
           class="w-full justify-start"
-          :class="{ 'bg-primary-50 dark:bg-primary-900/20': isActive(item.to) }"
         />
       </nav>
     </aside>
@@ -28,7 +27,6 @@
           icon="i-lucide-menu"
           variant="ghost"
           class="lg:hidden"
-          @click="toggleSidebar"
         />
         
         <div class="flex items-center gap-4">
@@ -36,14 +34,11 @@
             icon="i-lucide-bell"
             variant="ghost"
           />
-          <UDropdown :items="userMenu">
-            <UButton
-              icon="i-lucide-user"
-              :label="userName"
-              variant="ghost"
-              trailing-icon="i-lucide-chevron-down"
-            />
-          </UDropdown>
+          <UButton
+            icon="i-lucide-user"
+            label="Admin"
+            variant="ghost"
+          />
         </div>
       </header>
 
@@ -56,10 +51,6 @@
 </template>
 
 <script setup>
-const route = useRoute()
-const appName = 'IPL System'
-const userName = 'Admin'
-
 const menuItems = [
   { to: '/admin', label: 'Dashboard', icon: 'i-lucide-layout-dashboard' },
   { to: '/admin/kategori', label: 'Kategori Iuran', icon: 'i-lucide-tag' },
@@ -74,21 +65,4 @@ const menuItems = [
   { to: '/admin/laporan', label: 'Laporan', icon: 'i-lucide-bar-chart-3' },
   { to: '/admin/settings', label: 'Pengaturan', icon: 'i-lucide-settings' }
 ]
-
-const userMenu = [
-  [{ label: 'Profil', icon: 'i-lucide-user', to: '/admin/profil' }],
-  [{ label: 'Logout', icon: 'i-lucide-log-out', click: () => handleLogout() }]
-]
-
-function isActive(to) {
-  return route.path === to || route.path.startsWith(to + '/')
-}
-
-function toggleSidebar() {
-  // Toggle sidebar on mobile
-}
-
-function handleLogout() {
-  // Handle logout
-}
 </script>
