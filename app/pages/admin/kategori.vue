@@ -5,7 +5,7 @@
       <UButton
         label="Tambah Kategori"
         icon="i-lucide-plus"
-        @click="showForm = true"
+        @click="openForm()"
       />
     </div>
 
@@ -60,7 +60,7 @@
                     icon="i-lucide-edit"
                     variant="ghost"
                     size="sm"
-                    @click="editKategori(item)"
+                    @click="openForm(item)"
                   />
                   <UButton
                     icon="i-lucide-trash-2"
@@ -82,71 +82,102 @@
     </div>
 
     <!-- Form Modal -->
-    <UModal v-model="showForm">
-      <div class="p-6">
-        <h2 class="text-xl font-bold mb-4">
-          {{ editingKategori ? 'Edit Kategori' : 'Tambah Kategori' }}
-        </h2>
-
-        <UForm :state="form" @submit="handleSubmit" class="space-y-4">
-          <UFormGroup label="Nama Kategori" name="nama">
-            <UInput v-model="form.nama" placeholder="Contoh: Air, Sampah" />
-          </UFormGroup>
-
-          <UFormGroup label="Tipe" name="tipe">
-            <USelect
-              v-model="form.tipe"
-              :options="[
-                { label: 'Flat (tetap)', value: 'flat' },
-                { label: 'Meteran (berdasarkan pemakaian)', value: 'meteran' }
-              ]"
+    <UModal v-model:open="showForm" :title="editingKategori ? 'Edit Kategori' : 'Tambah Kategori'">
+      <template #body>
+        <form @submit.prevent="handleSubmit" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Nama Kategori</label>
+            <input
+              v-model="form.nama"
+              type="text"
+              placeholder="Contoh: Air, Sampah"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              required
             />
-          </UFormGroup>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-1">Tipe</label>
+            <select
+              v-model="form.tipe"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="flat">Flat (tetap)</option>
+              <option value="meteran">Meteran (berdasarkan pemakaian)</option>
+            </select>
+          </div>
 
           <template v-if="form.tipe === 'flat'">
-            <UFormGroup label="Tarif Flat (Rp)" name="tarif_flat">
-              <UInput v-model.number="form.tarif_flat" type="number" placeholder="25000" />
-            </UFormGroup>
+            <div>
+              <label class="block text-sm font-medium mb-1">Tarif Flat (Rp)</label>
+              <input
+                v-model.number="form.tarif_flat"
+                type="number"
+                placeholder="25000"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
           </template>
 
           <template v-if="form.tipe === 'meteran'">
-            <UFormGroup label="Minimum Kuota (m³)" name="minimum_kuota">
-              <UInput v-model.number="form.minimum_kuota" type="number" placeholder="10" />
-            </UFormGroup>
+            <div>
+              <label class="block text-sm font-medium mb-1">Minimum Kuota (m³)</label>
+              <input
+                v-model.number="form.minimum_kuota"
+                type="number"
+                placeholder="10"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
 
-            <UFormGroup label="Minimum Tarif (Rp)" name="minimum_tarif">
-              <UInput v-model.number="form.minimum_tarif" type="number" placeholder="25000" />
-            </UFormGroup>
+            <div>
+              <label class="block text-sm font-medium mb-1">Minimum Tarif (Rp)</label>
+              <input
+                v-model.number="form.minimum_tarif"
+                type="number"
+                placeholder="25000"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
 
-            <UFormGroup label="Tarif per m³ (Rp)" name="tarif_per_m3">
-              <UInput v-model.number="form.tarif_per_m3" type="number" placeholder="3000" />
-            </UFormGroup>
+            <div>
+              <label class="block text-sm font-medium mb-1">Tarif per m³ (Rp)</label>
+              <input
+                v-model.number="form.tarif_per_m3"
+                type="number"
+                placeholder="3000"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
           </template>
 
-          <UFormGroup label="Status" name="status">
-            <USelect
+          <div>
+            <label class="block text-sm font-medium mb-1">Status</label>
+            <select
               v-model="form.status"
-              :options="[
-                { label: 'Aktif', value: 'aktif' },
-                { label: 'Nonaktif', value: 'nonaktif' }
-              ]"
-            />
-          </UFormGroup>
-
-          <div class="flex justify-end gap-2 pt-4">
-            <UButton
-              label="Batal"
-              variant="ghost"
-              @click="closeForm"
-            />
-            <UButton
-              type="submit"
-              label="Simpan"
-              :loading="saving"
-            />
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="aktif">Aktif</option>
+              <option value="nonaktif">Nonaktif</option>
+            </select>
           </div>
-        </UForm>
-      </div>
+        </form>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UButton
+            label="Batal"
+            variant="ghost"
+            @click="closeForm"
+          />
+          <UButton
+            label="Simpan"
+            :loading="saving"
+            @click="handleSubmit"
+          />
+        </div>
+      </template>
     </UModal>
   </div>
 </template>
@@ -156,7 +187,7 @@ definePageMeta({
   layout: 'admin'
 })
 
-const tenantId = 'waris1' // TODO: get from auth context
+const tenantId = 'waris1'
 
 const kategori = ref([])
 const showForm = ref(false)
@@ -175,7 +206,6 @@ const form = reactive({
 
 const { formatRupiah } = useBilling()
 
-// Fetch kategori
 async function fetchKategori() {
   try {
     const data = await $fetch(`/api/kategori?tenant_id=${tenantId}`)
@@ -185,20 +215,33 @@ async function fetchKategori() {
   }
 }
 
-// Edit kategori
-function editKategori(item) {
+function openForm(item = null) {
   editingKategori.value = item
-  form.nama = item.nama
-  form.tipe = item.tipe
-  form.tarif_flat = item.tarif_flat
-  form.tarif_per_m3 = item.tarif_per_m3
-  form.minimum_kuota = item.minimum_kuota
-  form.minimum_tarif = item.minimum_tarif
-  form.status = item.status
+  if (item) {
+    form.nama = item.nama
+    form.tipe = item.tipe
+    form.tarif_flat = item.tarif_flat
+    form.tarif_per_m3 = item.tarif_per_m3
+    form.minimum_kuota = item.minimum_kuota
+    form.minimum_tarif = item.minimum_tarif
+    form.status = item.status
+  } else {
+    form.nama = ''
+    form.tipe = 'flat'
+    form.tarif_flat = 0
+    form.tarif_per_m3 = 0
+    form.minimum_kuota = 0
+    form.minimum_tarif = 0
+    form.status = 'aktif'
+  }
   showForm.value = true
 }
 
-// Delete kategori
+function closeForm() {
+  showForm.value = false
+  editingKategori.value = null
+}
+
 async function deleteKategori(item) {
   if (!confirm(`Hapus kategori "${item.nama}"?`)) return
 
@@ -210,7 +253,6 @@ async function deleteKategori(item) {
   }
 }
 
-// Submit form
 async function handleSubmit() {
   saving.value = true
   try {
@@ -234,20 +276,6 @@ async function handleSubmit() {
   }
 }
 
-// Close form
-function closeForm() {
-  showForm.value = false
-  editingKategori.value = null
-  form.nama = ''
-  form.tipe = 'flat'
-  form.tarif_flat = 0
-  form.tarif_per_m3 = 0
-  form.minimum_kuota = 0
-  form.minimum_tarif = 0
-  form.status = 'aktif'
-}
-
-// Fetch on mount
 onMounted(() => {
   fetchKategori()
 })

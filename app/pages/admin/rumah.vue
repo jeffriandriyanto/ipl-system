@@ -7,7 +7,7 @@
         <UButton
           label="Tambah Rumah"
           icon="i-lucide-plus"
-          @click="showForm = true"
+          @click="openForm()"
         />
       </div>
     </div>
@@ -17,24 +17,24 @@
       <div class="flex flex-wrap gap-4">
         <div>
           <label class="text-sm font-medium mb-1 block">Blok</label>
-          <USelect
+          <select
             v-model="filterBlok"
-            :options="blokOptions"
-            placeholder="Semua Blok"
-            class="w-40"
-          />
+            class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">Semua Blok</option>
+            <option v-for="b in blokOptions" :key="b" :value="b">{{ b }}</option>
+          </select>
         </div>
         <div>
           <label class="text-sm font-medium mb-1 block">Status</label>
-          <USelect
+          <select
             v-model="filterStatus"
-            :options="[
-              { label: 'Semua', value: '' },
-              { label: 'Aktif', value: 'aktif' },
-              { label: 'Nonaktif', value: 'nonaktif' }
-            ]"
-            class="w-40"
-          />
+            class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">Semua</option>
+            <option value="aktif">Aktif</option>
+            <option value="nonaktif">Nonaktif</option>
+          </select>
         </div>
       </div>
     </div>
@@ -88,7 +88,7 @@
                     icon="i-lucide-edit"
                     variant="ghost"
                     size="sm"
-                    @click="editRumah(item)"
+                    @click="openForm(item)"
                   />
                   <UButton
                     icon="i-lucide-trash-2"
@@ -110,99 +110,154 @@
     </div>
 
     <!-- Form Modal -->
-    <UModal v-model="showForm" :ui="{ width: 'max-w-2xl' }">
-      <div class="p-6">
-        <h2 class="text-xl font-bold mb-4">
-          {{ editingRumah ? 'Edit Rumah' : 'Tambah Rumah' }}
-        </h2>
-
-        <UForm :state="form" @submit="handleSubmit" class="space-y-4">
+    <UModal v-model:open="showForm" :title="editingRumah ? 'Edit Rumah' : 'Tambah Rumah'" :ui="{ content: 'max-w-2xl' }">
+      <template #body>
+        <form @submit.prevent="handleSubmit" class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
-            <UFormGroup label="Blok" name="blok">
-              <UInput v-model="form.blok" placeholder="A" />
-            </UFormGroup>
-
-            <UFormGroup label="Nomor" name="nomor">
-              <UInput v-model="form.nomor" placeholder="1" />
-            </UFormGroup>
-          </div>
-
-          <UFormGroup label="Tipe" name="tipe">
-            <USelect
-              v-model="form.tipe"
-              :options="[
-                { label: 'Pribadi', value: 'pribadi' },
-                { label: 'Kontrakan', value: 'kontrakan' },
-                { label: 'Fasum', value: 'fasum' }
-              ]"
-            />
-          </UFormGroup>
-
-          <UFormGroup label="Alamat" name="alamat">
-            <UInput v-model="form.alamat" placeholder="Alamat lengkap (opsional)" />
-          </UFormGroup>
-
-          <div class="grid grid-cols-2 gap-4">
-            <UFormGroup label="PIC (Penanggung Jawab)" name="pic_nama">
-              <UInput v-model="form.pic_nama" placeholder="Nama PIC" />
-            </UFormGroup>
-
-            <UFormGroup label="Telepon PIC" name="pic_telepon">
-              <UInput v-model="form.pic_telepon" placeholder="0812xxxx" />
-            </UFormGroup>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <UFormGroup label="Pemilik Rumah" name="pemilik_nama">
-              <UInput v-model="form.pemilik_nama" placeholder="Nama pemilik (opsional)" />
-            </UFormGroup>
-
-            <UFormGroup label="Telepon Pemilik" name="pemilik_telepon">
-              <UInput v-model="form.pemilik_telepon" placeholder="0812xxxx (opsional)" />
-            </UFormGroup>
-          </div>
-
-          <UFormGroup label="Kategori Iuran" name="kategori_iuran">
-            <div class="flex flex-wrap gap-2">
-              <UButton
-                v-for="kat in kategoriList"
-                :key="kat.id"
-                :label="kat.nama"
-                :variant="form.kategori_iuran.includes(kat.id) ? 'solid' : 'outline'"
-                size="sm"
-                @click="toggleKategori(kat.id)"
+            <div>
+              <label class="block text-sm font-medium mb-1">Blok</label>
+              <input
+                v-model="form.blok"
+                type="text"
+                placeholder="A"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                required
               />
             </div>
-          </UFormGroup>
 
-          <UFormGroup label="Status" name="status">
-            <USelect
-              v-model="form.status"
-              :options="[
-                { label: 'Aktif', value: 'aktif' },
-                { label: 'Nonaktif', value: 'nonaktif' }
-              ]"
-            />
-          </UFormGroup>
+            <div>
+              <label class="block text-sm font-medium mb-1">Nomor</label>
+              <input
+                v-model="form.nomor"
+                type="text"
+                placeholder="1"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                required
+              />
+            </div>
+          </div>
 
-          <UFormGroup label="Keterangan" name="keterangan">
-            <UTextarea v-model="form.keterangan" placeholder="Keterangan (opsional)" />
-          </UFormGroup>
+          <div>
+            <label class="block text-sm font-medium mb-1">Tipe</label>
+            <select
+              v-model="form.tipe"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="pribadi">Pribadi</option>
+              <option value="kontrakan">Kontrakan</option>
+              <option value="fasum">Fasum</option>
+            </select>
+          </div>
 
-          <div class="flex justify-end gap-2 pt-4">
-            <UButton
-              label="Batal"
-              variant="ghost"
-              @click="closeForm"
-            />
-            <UButton
-              type="submit"
-              label="Simpan"
-              :loading="saving"
+          <div>
+            <label class="block text-sm font-medium mb-1">Alamat</label>
+            <input
+              v-model="form.alamat"
+              type="text"
+              placeholder="Alamat lengkap (opsional)"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
-        </UForm>
-      </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">PIC (Penanggung Jawab)</label>
+              <input
+                v-model="form.pic_nama"
+                type="text"
+                placeholder="Nama PIC"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-1">Telepon PIC</label>
+              <input
+                v-model="form.pic_telepon"
+                type="text"
+                placeholder="0812xxxx"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Pemilik Rumah</label>
+              <input
+                v-model="form.pemilik_nama"
+                type="text"
+                placeholder="Nama pemilik (opsional)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-1">Telepon Pemilik</label>
+              <input
+                v-model="form.pemilik_telepon"
+                type="text"
+                placeholder="0812xxxx (opsional)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-1">Kategori Iuran</label>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="kat in kategoriList"
+                :key="kat.id"
+                type="button"
+                class="px-3 py-1 rounded-full text-sm font-medium border transition-colors"
+                :class="form.kategori_iuran.includes(kat.id) 
+                  ? 'bg-primary-600 text-white border-primary-600' 
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-primary-500'"
+                @click="toggleKategori(kat.id)"
+              >
+                {{ kat.nama }}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-1">Status</label>
+            <select
+              v-model="form.status"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="aktif">Aktif</option>
+              <option value="nonaktif">Nonaktif</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-1">Keterangan</label>
+            <textarea
+              v-model="form.keterangan"
+              placeholder="Keterangan (opsional)"
+              rows="2"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+        </form>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UButton
+            label="Batal"
+            variant="ghost"
+            @click="closeForm"
+          />
+          <UButton
+            label="Simpan"
+            :loading="saving"
+            @click="handleSubmit"
+          />
+        </div>
+      </template>
     </UModal>
   </div>
 </template>
@@ -212,7 +267,7 @@ definePageMeta({
   layout: 'admin'
 })
 
-const tenantId = 'waris1' // TODO: get from auth context
+const tenantId = 'waris1'
 
 const rumah = ref([])
 const kategoriList = ref([])
@@ -237,13 +292,8 @@ const form = reactive({
   keterangan: ''
 })
 
-// Computed
 const blokOptions = computed(() => {
-  const bloks = [...new Set(rumah.value.map(r => r.blok))]
-  return [
-    { label: 'Semua', value: '' },
-    ...bloks.map(b => ({ label: b, value: b }))
-  ]
+  return [...new Set(rumah.value.map(r => r.blok))].sort()
 })
 
 const filteredRumah = computed(() => {
@@ -257,7 +307,6 @@ const filteredRumah = computed(() => {
   return result
 })
 
-// Fetch data
 async function fetchRumah() {
   try {
     const data = await $fetch(`/api/rumah?tenant_id=${tenantId}`)
@@ -276,7 +325,6 @@ async function fetchKategori() {
   }
 }
 
-// Toggle kategori selection
 function toggleKategori(katId) {
   const index = form.kategori_iuran.indexOf(katId)
   if (index === -1) {
@@ -286,25 +334,43 @@ function toggleKategori(katId) {
   }
 }
 
-// Edit rumah
-function editRumah(item) {
+function openForm(item = null) {
   editingRumah.value = item
-  form.blok = item.blok
-  form.nomor = item.nomor
-  form.tipe = item.tipe
-  form.alamat = item.alamat || ''
-  form.pic_nama = item.pic_nama || ''
-  form.pic_telepon = item.pic_telepon || ''
-  form.pic_email = item.pic_email || ''
-  form.pemilik_nama = item.pemilik_nama || ''
-  form.pemilik_telepon = item.pemilik_telepon || ''
-  form.kategori_iuran = item.kategori_iuran || []
-  form.status = item.status
-  form.keterangan = item.keterangan || ''
+  if (item) {
+    form.blok = item.blok
+    form.nomor = item.nomor
+    form.tipe = item.tipe
+    form.alamat = item.alamat || ''
+    form.pic_nama = item.pic_nama || ''
+    form.pic_telepon = item.pic_telepon || ''
+    form.pic_email = item.pic_email || ''
+    form.pemilik_nama = item.pemilik_nama || ''
+    form.pemilik_telepon = item.pemilik_telepon || ''
+    form.kategori_iuran = item.kategori_iuran || []
+    form.status = item.status
+    form.keterangan = item.keterangan || ''
+  } else {
+    form.blok = ''
+    form.nomor = ''
+    form.tipe = 'pribadi'
+    form.alamat = ''
+    form.pic_nama = ''
+    form.pic_telepon = ''
+    form.pic_email = ''
+    form.pemilik_nama = ''
+    form.pemilik_telepon = ''
+    form.kategori_iuran = []
+    form.status = 'aktif'
+    form.keterangan = ''
+  }
   showForm.value = true
 }
 
-// Delete rumah
+function closeForm() {
+  showForm.value = false
+  editingRumah.value = null
+}
+
 async function deleteRumah(item) {
   if (!confirm(`Hapus rumah ${item.blok}-${item.nomor}?`)) return
 
@@ -316,7 +382,6 @@ async function deleteRumah(item) {
   }
 }
 
-// Submit form
 async function handleSubmit() {
   saving.value = true
   try {
@@ -340,25 +405,6 @@ async function handleSubmit() {
   }
 }
 
-// Close form
-function closeForm() {
-  showForm.value = false
-  editingRumah.value = null
-  form.blok = ''
-  form.nomor = ''
-  form.tipe = 'pribadi'
-  form.alamat = ''
-  form.pic_nama = ''
-  form.pic_telepon = ''
-  form.pic_email = ''
-  form.pemilik_nama = ''
-  form.pemilik_telepon = ''
-  form.kategori_iuran = []
-  form.status = 'aktif'
-  form.keterangan = ''
-}
-
-// Fetch on mount
 onMounted(() => {
   fetchRumah()
   fetchKategori()
