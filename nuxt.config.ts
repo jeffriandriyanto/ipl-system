@@ -9,8 +9,6 @@ export default defineNuxtConfig({
     enabled: true
   },
 
-  css: ['~/assets/css/main.css'],
-
   routeRules: {
     '/': { redirect: '/cek-tagihan' },
     '/admin/**': { ssr: false }
@@ -28,10 +26,7 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    // Private (server-side only)
     authSecret: process.env.NUXT_AUTH_SECRET || 'super-secret',
-    
-    // Public (exposed to client)
     public: {
       appName: process.env.NUXT_PUBLIC_APP_NAME || 'IPL System',
       appUrl: process.env.NUXT_PUBLIC_APP_URL || 'https://ipl-system.netlify.app',
@@ -40,14 +35,12 @@ export default defineNuxtConfig({
     }
   },
 
-  // Nitro configuration for server routes
   nitro: {
     experimental: {
       asyncContext: true
     }
   },
 
-  // App configuration
   app: {
     head: {
       title: 'IPL System - Manajemen Iuran Warga',
