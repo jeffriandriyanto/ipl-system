@@ -32,9 +32,10 @@ export default defineNuxtConfig({
     }
   },
 
+  ssr: false,
+
   routeRules: {
-    '/': { redirect: '/cek-tagihan' },
-    '/admin/**': { ssr: false }
+    '/': { redirect: '/cek-tagihan' }
   },
 
   compatibilityDate: '2026-06-30',
