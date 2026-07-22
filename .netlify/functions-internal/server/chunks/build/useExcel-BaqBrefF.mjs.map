@@ -1,0 +1,1 @@
+{"version":3,"file":"useExcel-BaqBrefF.mjs","sources":["../../../../../node_modules/xlsx/xlsx.js","../../../../../node_modules/.cache/nuxt/.nuxt/dist/server/_nuxt/useExcel-BaqBrefF.js"],"names":["require","XLSX.utils","XLSX.writeFile","XLSX.read"],"mappings":"","x_google_ignoreList":[0,1]}
