@@ -7,15 +7,50 @@
       </div>
       
       <nav class="p-4 space-y-1 overflow-y-auto h-[calc(100vh-8rem)]">
-        <UButton
-          v-for="item in menuItems"
-          :key="item.to"
-          :to="item.to"
-          :icon="item.icon"
-          :label="item.label"
-          variant="ghost"
-          class="w-full justify-start"
-        />
+        <template v-for="item in menuItems" :key="item.label">
+          <!-- Single link -->
+          <UButton
+            v-if="!item.children"
+            :to="item.to"
+            :icon="item.icon"
+            :label="item.label"
+            variant="ghost"
+            class="w-full justify-start"
+          />
+
+          <!-- Collapsible group -->
+          <div v-else>
+            <button
+              class="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              @click="toggleGroup(item.label)"
+            >
+              <span class="flex items-center gap-2">
+                <UIcon :name="item.icon" class="w-4 h-4" />
+                {{ item.label }}
+              </span>
+              <UIcon
+                name="i-lucide-chevron-down"
+                class="w-4 h-4 transition-transform"
+                :class="{ '-rotate-90': !openGroups[item.label] }"
+              />
+            </button>
+            <div
+              v-show="openGroups[item.label]"
+              class="ml-4 mt-1 space-y-1 border-l-2 border-gray-200 dark:border-gray-700 pl-2"
+            >
+              <UButton
+                v-for="child in item.children"
+                :key="child.to"
+                :to="child.to"
+                :icon="child.icon"
+                :label="child.label"
+                variant="ghost"
+                size="sm"
+                class="w-full justify-start"
+              />
+            </div>
+          </div>
+        </template>
       </nav>
 
       <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700">
@@ -76,18 +111,39 @@ const currentPeriode = computed(() => {
   return `${months[now.getMonth()]} ${now.getFullYear()}`
 })
 
+const openGroups = reactive({
+  'Master Data': true,
+  'Transaksi': true
+})
+
+function toggleGroup(label) {
+  openGroups[label] = !openGroups[label]
+}
+
 const menuItems = [
   { to: '/admin', label: 'Dashboard', icon: 'i-lucide-layout-dashboard' },
-  { to: '/admin/kategori', label: 'Kategori Iuran', icon: 'i-lucide-tag' },
-  { to: '/admin/rumah', label: 'Data Rumah', icon: 'i-lucide-home' },
-  { to: '/admin/meteran', label: 'Input Meteran', icon: 'i-lucide-gauge' },
-  { to: '/admin/pembayaran', label: 'Pembayaran', icon: 'i-lucide-credit-card' },
-  { to: '/admin/kas', label: 'Kas Masuk/Keluar', icon: 'i-lucide-wallet' },
-  { to: '/admin/saldo-lebih', label: 'Saldo Lebih', icon: 'i-lucide-trending-up' },
+  {
+    label: 'Master Data',
+    icon: 'i-lucide-database',
+    children: [
+      { to: '/admin/kategori', label: 'Kategori Iuran', icon: 'i-lucide-tag' },
+      { to: '/admin/rumah', label: 'Data Rumah', icon: 'i-lucide-home' },
+      { to: '/admin/users', label: 'User Management', icon: 'i-lucide-users' }
+    ]
+  },
+  {
+    label: 'Transaksi',
+    icon: 'i-lucide-arrow-left-right',
+    children: [
+      { to: '/admin/meteran', label: 'Input Meteran', icon: 'i-lucide-gauge' },
+      { to: '/admin/pembayaran', label: 'Pembayaran', icon: 'i-lucide-credit-card' },
+      { to: '/admin/kas', label: 'Kas Masuk/Keluar', icon: 'i-lucide-wallet' },
+      { to: '/admin/saldo-lebih', label: 'Saldo Lebih', icon: 'i-lucide-trending-up' }
+    ]
+  },
   { to: '/admin/tutup-buku', label: 'Tutup Buku', icon: 'i-lucide-lock' },
-  { to: '/admin/users', label: 'User Management', icon: 'i-lucide-users' },
-  { to: '/admin/audit-log', label: 'Audit Log', icon: 'i-lucide-file-text' },
   { to: '/admin/laporan', label: 'Laporan', icon: 'i-lucide-bar-chart-3' },
+  { to: '/admin/audit-log', label: 'Audit Log', icon: 'i-lucide-file-text' },
   { to: '/admin/settings', label: 'Pengaturan', icon: 'i-lucide-settings' }
 ]
 

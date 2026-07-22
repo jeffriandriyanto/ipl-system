@@ -85,6 +85,7 @@ model Rumah {
   pemilik_telepon String?
   kategori_iuran  String[] // Array of kategori IDs
   keterangan      String?
+  saldo_lebih     Int      @default(0) // Running credit balance
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
@@ -133,6 +134,7 @@ model Tagihan {
   selisih         Int      @default(0)
   status          String   @default("belum_bayar") // belum_bayar, lunas, kurang, lebih
   saldo_lebih     Int      @default(0)
+  is_exempt       Boolean  @default(false) // true = rumah ini tidak wajib bayar bulan ini
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
@@ -223,6 +225,7 @@ model Settings {
   nama_perumahan String?
   alamat         String?
   kontak         String?
+  payment_info   String?
 
   tenant         Tenant @relation(fields: [tenant_id], references: [id])
   @@index([tenant_id])

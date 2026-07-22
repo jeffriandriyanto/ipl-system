@@ -12,9 +12,21 @@
           <p class="font-semibold text-blue-800">Informasi</p>
           <p class="text-sm text-blue-700 mt-1">
             Daftar rumah yang memiliki saldo lebih (bayar melebihi tagihan). 
-            Saldo lebih bisa dikurangi dari tagihan bulan berikutnya.
+            Saldo lebih akan otomatis dikurangi dari tagihan bulan berikutnya.
           </p>
         </div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+        <p class="text-sm text-gray-500">Total Rumah dengan Saldo Lebih</p>
+        <p class="text-2xl font-bold text-green-600">{{ saldoList.length }}</p>
+      </div>
+      <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+        <p class="text-sm text-gray-500">Total Saldo Lebih</p>
+        <p class="text-2xl font-bold text-blue-600">{{ formatRupiah(totalSaldo) }}</p>
       </div>
     </div>
 
@@ -26,11 +38,9 @@
             <tr class="border-b border-gray-200 dark:border-gray-700">
               <th class="text-left p-4 font-semibold">Rumah</th>
               <th class="text-left p-4 font-semibold">PIC</th>
-              <th class="text-left p-4 font-semibold">Periode</th>
-              <th class="text-right p-4 font-semibold">Tagihan</th>
-              <th class="text-right p-4 font-semibold">Bayar</th>
+              <th class="text-left p-4 font-semibold">Telepon</th>
+              <th class="text-left p-4 font-semibold">Tipe</th>
               <th class="text-right p-4 font-semibold">Saldo Lebih</th>
-              <th class="text-center p-4 font-semibold">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -39,20 +49,22 @@
               :key="item.id"
               class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              <td class="p-4 font-medium">{{ item.blok }}-{{ item.nomor_rumah }}</td>
+              <td class="p-4 font-medium">{{ item.blok }}-{{ item.nomor }}</td>
               <td class="p-4 text-sm">{{ item.pic_nama || '-' }}</td>
-              <td class="p-4 text-sm">{{ item.periode }}</td>
-              <td class="p-4 text-right">{{ formatRupiah(item.total_tagihan) }}</td>
-              <td class="p-4 text-right text-green-600">{{ formatRupiah(item.total_bayar) }}</td>
-              <td class="p-4 text-right font-bold text-blue-600">{{ formatRupiah(item.saldo_lebih) }}</td>
-              <td class="p-4 text-center">
-                <UButton
-                  label="Kurangi Tagihan"
-                  size="sm"
-                  variant="outline"
-                  @click="adjustSaldo(item)"
-                />
+              <td class="p-4 text-sm">{{ item.pic_telepon || '-' }}</td>
+              <td class="p-4">
+                <span
+                  class="px-2 py-1 rounded-full text-xs font-medium"
+                  :class="{
+                    'bg-blue-100 text-blue-800': item.tipe === 'pribadi',
+                    'bg-purple-100 text-purple-800': item.tipe === 'kontrakan',
+                    'bg-gray-100 text-gray-800': item.tipe === 'fasum'
+                  }"
+                >
+                  {{ item.tipe }}
+                </span>
               </td>
+              <td class="p-4 text-right font-bold text-blue-600">{{ formatRupiah(item.saldo_lebih) }}</td>
             </tr>
           </tbody>
         </table>
@@ -76,19 +88,17 @@ const saldoList = ref([])
 
 const { formatRupiah } = useBilling()
 
+const totalSaldo = computed(() => {
+  return saldoList.value.reduce((sum, r) => sum + r.saldo_lebih, 0)
+})
+
 async function fetchSaldoLebih() {
   try {
-    // Fetch all tagihan with status 'lebih'
-    const data = await $fetch(`/api/tagihan?tenant_id=${tenantId}&status=lebih`)
-    saldoList.value = data.data || []
+    const data = await $fetch(`/api/rumah?tenant_id=${tenantId}&has_saldo_lebih=true`)
+    saldoList.value = data
   } catch (error) {
     console.error('Error fetching saldo lebih:', error)
   }
-}
-
-function adjustSaldo(item) {
-  // TODO: implement adjust saldo
-  alert('Fitur adjust saldo belum diimplementasikan')
 }
 
 onMounted(() => {

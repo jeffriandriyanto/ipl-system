@@ -3,7 +3,13 @@
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold">Input Meteran</h1>
       <div class="flex gap-2">
-        <DownloadTemplate type="meteran" />
+        <DownloadTemplate 
+          type="meteran" 
+          :data="templateData"
+          :filename="`meteran-${selectedPeriode}`"
+          :periode="selectedPeriode"
+          label="Download Data Meteran"
+        />
         <UButton
           label="Upload Excel"
           icon="i-lucide-upload"
@@ -34,11 +40,16 @@
     </div>
 
     <!-- Meteran Table -->
-    <div v-if="meteranData.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+    <div
+      v-if="meteranData.length > 0"
+      class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden"
+    >
       <div class="overflow-x-auto">
         <table class="w-full">
           <thead>
-            <tr class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+            <tr
+              class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700"
+            >
               <th class="text-left p-3 font-semibold text-sm">Blok-No</th>
               <th class="text-left p-3 font-semibold text-sm">PIC</th>
               <th class="text-left p-3 font-semibold text-sm">Status</th>
@@ -56,11 +67,19 @@
                 :key="`${item.rumah_id}-${meter.kategori_id}`"
                 class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
-                <td v-if="idx === 0" :rowspan="item.meteran.length" class="p-3 font-medium">
+                <td
+                  v-if="idx === 0"
+                  :rowspan="item.meteran.length"
+                  class="p-3 font-medium"
+                >
                   {{ item.blok }}-{{ item.nomor }}
                 </td>
-                <td v-if="idx === 0" :rowspan="item.meteran.length" class="p-3 text-sm">
-                  {{ item.pic_nama || '-' }}
+                <td
+                  v-if="idx === 0"
+                  :rowspan="item.meteran.length"
+                  class="p-3 text-sm"
+                >
+                  {{ item.pic_nama || "-" }}
                 </td>
                 <td v-if="idx === 0" :rowspan="item.meteran.length" class="p-3">
                   <select
@@ -101,56 +120,89 @@
       </div>
     </div>
 
-    <div v-else-if="!loading" class="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center text-gray-500">
+    <div
+      v-else-if="!loading"
+      class="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center text-gray-500"
+    >
       Pilih periode dan klik "Load Data" untuk menampilkan data meteran
     </div>
 
     <!-- Upload Modal -->
     <UModal v-model="showUpload">
-      <div class="p-6">
-        <h2 class="text-xl font-bold mb-4">Upload Excel Meteran</h2>
-        <UploadExcel v-model="uploadFile" />
-        <div class="flex justify-end gap-2 mt-4">
-          <UButton label="Batal" variant="ghost" @click="showUpload = false" />
-          <UButton label="Upload" :loading="uploading" @click="handleUpload" />
+      <template #body>
+        <div class="p-6">
+          <h2 class="text-xl font-bold mb-4">Upload Excel Meteran</h2>
+          <UploadExcel v-model="uploadFile" />
+          <div class="flex justify-end gap-2 mt-4">
+            <UButton
+              label="Batal"
+              variant="ghost"
+              @click="showUpload = false"
+            />
+            <UButton
+              label="Upload"
+              :loading="uploading"
+              @click="handleUpload"
+            />
+          </div>
         </div>
-      </div>
+      </template>
     </UModal>
   </div>
 </template>
 
 <script setup>
 definePageMeta({
-  layout: 'admin'
+  layout: "admin",
+});
+
+const { tenantId } = useTenant();
+
+const selectedPeriode = ref(new Date().toISOString().slice(0, 7));
+const meteranData = ref([]);
+const loading = ref(false);
+const saving = ref(null);
+const showUpload = ref(false);
+const uploadFile = ref(null);
+const uploading = ref(false);
+
+const { formatRupiah } = useBilling();
+
+// Data untuk download template (pre-fill dari database)
+const templateData = computed(() => {
+  return meteranData.value.map((item, index) => {
+    // Cari meteran Air (meteran), atau ambil yang pertama
+    const meterAir = item.meteran.find(m => m.tipe === 'meteran') || item.meteran[0]
+    return {
+      no: index + 1,
+      blok: item.blok,
+      nomor: item.nomor,
+      status_penghuni: item.status_penghuni || 'ada',
+      pic: item.pic_nama || '',
+      meter_lalu: meterAir?.meter_lalu || 0,
+      meter_sekarang: '',
+      keterangan: ''
+    }
+  })
 })
 
-const { tenantId } = useTenant()
-
-const selectedPeriode = ref(new Date().toISOString().slice(0, 7))
-const meteranData = ref([])
-const loading = ref(false)
-const saving = ref(null)
-const showUpload = ref(false)
-const uploadFile = ref(null)
-const uploading = ref(false)
-
-const { formatRupiah } = useBilling()
-
 function hitungPakai(meter) {
-  if (!meter.meter_sekarang || !meter.meter_lalu) return 0
-  return Math.max(0, meter.meter_sekarang - meter.meter_lalu)
+  if (!meter.meter_sekarang || !meter.meter_lalu) return 0;
+  return Math.max(0, meter.meter_sekarang - meter.meter_lalu);
 }
 
 async function fetchMeteran() {
-  loading.value = true
+  loading.value = true;
   try {
-    const data = await $fetch(`/api/meteran?tenant_id=${tenantId}&periode=${selectedPeriode.value}`)
-    meteranData.value = data.data || []
+    const data = await $fetch(
+      `/api/meteran?tenant_id=${tenantId}&periode=${selectedPeriode.value}`,
+    );
+    meteranData.value = data.data || [];
   } catch (error) {
-    console.error('Error fetching meteran:', error)
-    alert('Gagal mengambil data meteran')
+    console.error("Error fetching meteran:", error);
+    alert("Gagal mengambil data meteran");
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
@@ -159,39 +211,39 @@ function updateStatus(item) {
 }
 
 async function simpanMeteran(item) {
-  saving.value = item.rumah_id
+  saving.value = item.rumah_id;
   try {
-    const items = item.meteran.map(m => ({
+    const items = item.meteran.map((m) => ({
       kategori_id: m.kategori_id,
       meter_lalu: m.meter_lalu,
-      meter_sekarang: m.meter_sekarang || 0
-    }))
+      meter_sekarang: m.meter_sekarang || 0,
+    }));
 
-    await $fetch('/api/meteran', {
-      method: 'POST',
+    await $fetch("/api/meteran", {
+      method: "POST",
       body: {
         tenant_id: tenantId,
         periode: selectedPeriode.value,
         rumah_id: item.rumah_id,
         status_penghuni: item.status_penghuni,
-        items
-      }
-    })
+        items,
+      },
+    });
 
-    alert('Meteran berhasil disimpan')
+    alert("Meteran berhasil disimpan");
   } catch (error) {
-    alert(error.data?.message || 'Gagal menyimpan meteran')
+    alert(error.data?.message || "Gagal menyimpan meteran");
   } finally {
-    saving.value = null
+    saving.value = null;
   }
 }
 
 async function handleUpload() {
   // TODO: implement Excel upload
-  alert('Fitur upload Excel belum diimplementasikan')
+  alert("Fitur upload Excel belum diimplementasikan");
 }
 
 onMounted(() => {
-  fetchMeteran()
-})
+  fetchMeteran();
+});
 </script>

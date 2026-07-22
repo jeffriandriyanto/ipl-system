@@ -51,7 +51,8 @@ export default defineEventHandler(async (event) => {
       total_tagihan: tagihan.reduce((sum, t) => sum + t.total_tagihan, 0),
       total_bayar: tagihan.reduce((sum, t) => sum + t.total_bayar, 0),
       lunas: tagihan.filter(t => t.status === 'lunas' || t.status === 'lebih').length,
-      belum_lunas: tagihan.filter(t => t.status === 'belum_bayar' || t.status === 'kurang').length
+      belum_lunas: tagihan.filter(t => (t.status === 'belum_bayar' || t.status === 'kurang') && !t.is_exempt).length,
+      exempt: tagihan.filter(t => t.is_exempt).length
     }
 
     return {

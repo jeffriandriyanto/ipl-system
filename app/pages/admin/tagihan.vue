@@ -45,7 +45,7 @@
       </div>
 
       <!-- Summary Cards -->
-      <div v-if="summary" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+      <div v-if="summary" class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
         <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
           <p class="text-sm text-gray-500">Total Rumah</p>
           <p class="text-2xl font-bold">{{ summary.total_rumah }}</p>
@@ -57,6 +57,10 @@
         <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
           <p class="text-sm text-gray-500">Belum Bayar</p>
           <p class="text-2xl font-bold text-red-600">{{ summary.belum_lunas }}</p>
+        </div>
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3">
+          <p class="text-sm text-gray-500">Exempt</p>
+          <p class="text-2xl font-bold text-yellow-600">{{ summary.exempt || 0 }}</p>
         </div>
         <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
           <p class="text-sm text-gray-500">Total Tagihan</p>
@@ -74,6 +78,7 @@
               <th class="text-left p-3 font-semibold text-sm">No</th>
               <th class="text-left p-3 font-semibold text-sm">Blok-No</th>
               <th class="text-left p-3 font-semibold text-sm">Status</th>
+              <th class="text-center p-3 font-semibold text-sm">Exempt</th>
               <th class="text-left p-3 font-semibold text-sm">Jenis Iuran</th>
               <th class="text-left p-3 font-semibold text-sm">Meter Lalu</th>
               <th class="text-left p-3 font-semibold text-sm">Meter Skrg</th>
@@ -104,6 +109,14 @@
                   >
                     {{ item.status_penghuni === 'ada' ? 'Dihuni' : 'Kosong' }}
                   </span>
+                </td>
+                <td v-if="idx === 0" :rowspan="item.items.length" class="p-3 text-center">
+                  <input
+                    type="checkbox"
+                    :checked="item.is_exempt"
+                    class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    @change="toggleExempt(item)"
+                  />
                 </td>
                 <td class="p-3 text-sm">{{ detail.kategori_nama }}</td>
                 <td class="p-3 text-sm">{{ detail.meter_lalu || '-' }}</td>
@@ -199,6 +212,18 @@ async function fetchTagihan() {
 function exportExcel() {
   // TODO: implement export Excel
   alert('Fitur export Excel belum diimplementasikan')
+}
+
+async function toggleExempt(item) {
+  try {
+    await $fetch(`/api/tagihan/${item.id}`, {
+      method: 'PUT',
+      body: { is_exempt: !item.is_exempt }
+    })
+    item.is_exempt = !item.is_exempt
+  } catch (error) {
+    alert('Gagal mengupdate status exempt')
+  }
 }
 
 onMounted(() => {

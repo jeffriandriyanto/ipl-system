@@ -123,6 +123,7 @@
               v-model="form.kategori"
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
+              <option value="iuran">Iuran</option>
               <option value="donasi">Donasi</option>
               <option value="operasional">Operasional</option>
               <option value="lainnya">Lainnya</option>
@@ -196,7 +197,7 @@ const filterBulan = ref(new Date().toISOString().slice(0, 7))
 
 const form = reactive({
   tipe: 'masuk',
-  kategori: 'donasi',
+  kategori: 'iuran',
   jumlah: 0,
   tanggal: new Date().toISOString().slice(0, 10),
   keterangan: ''
@@ -228,7 +229,7 @@ async function fetchKas() {
 
 function openForm() {
   form.tipe = 'masuk'
-  form.kategori = 'donasi'
+  form.kategori = 'iuran'
   form.jumlah = 0
   form.tanggal = new Date().toISOString().slice(0, 10)
   form.keterangan = ''

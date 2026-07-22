@@ -5,6 +5,12 @@
       <div class="flex gap-2">
         <DownloadTemplate type="rumah" />
         <UButton
+          label="Upload Excel"
+          icon="i-lucide-upload"
+          variant="outline"
+          @click="showUpload = true"
+        />
+        <UButton
           label="Tambah Rumah"
           icon="i-lucide-plus"
           @click="openForm()"
@@ -108,6 +114,39 @@
         Tidak ada data rumah
       </div>
     </div>
+
+    <!-- Upload Modal -->
+    <UModal v-model:open="showUpload" title="Import Data Rumah" :ui="{ content: 'max-w-xl' }">
+      <template #body>
+        <div class="space-y-4">
+          <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-sm text-blue-700 dark:text-blue-300">
+            <p class="font-medium mb-1">Format Excel:</p>
+            <p>BLOK, NO RUMAH, TIPE (pribadi/kontrakan/fasum), STATUS, PIC, TELEPON, KATEGORI IURAN (pisahkan koma), KETERANGAN</p>
+          </div>
+          <UploadExcel v-model="uploadFile" @parsed="onFileParsed" />
+          <div v-if="importResult" class="rounded-lg p-3 text-sm" :class="importResult.failed > 0 ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300' : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'">
+            <p class="font-medium">Hasil Import:</p>
+            <p>Berhasil: {{ importResult.success }} | Gagal: {{ importResult.failed }}</p>
+            <ul v-if="importResult.errors.length" class="mt-1 list-disc list-inside text-xs">
+              <li v-for="(err, i) in importResult.errors.slice(0, 5)" :key="i">{{ err }}</li>
+              <li v-if="importResult.errors.length > 5">...dan {{ importResult.errors.length - 5 }} error lainnya</li>
+            </ul>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UButton label="Batal" variant="ghost" @click="closeUpload" />
+          <UButton
+            label="Import"
+            icon="i-lucide-upload"
+            :loading="importing"
+            :disabled="!uploadData.length"
+            @click="handleImport"
+          />
+        </div>
+      </template>
+    </UModal>
 
     <!-- Form Modal -->
     <UModal v-model:open="showForm" :title="editingRumah ? 'Edit Rumah' : 'Tambah Rumah'" :ui="{ content: 'max-w-2xl' }">
@@ -277,6 +316,13 @@ const saving = ref(false)
 const filterBlok = ref('')
 const filterStatus = ref('')
 
+// Upload state
+const showUpload = ref(false)
+const uploadFile = ref(null)
+const uploadData = ref([])
+const importing = ref(false)
+const importResult = ref(null)
+
 const form = reactive({
   blok: '',
   nomor: '',
@@ -403,6 +449,38 @@ async function handleSubmit() {
   } finally {
     saving.value = false
   }
+}
+
+function onFileParsed(data) {
+  uploadData.value = data
+}
+
+async function handleImport() {
+  if (!uploadData.value.length) return
+
+  importing.value = true
+  try {
+    const result = await $fetch('/api/rumah/batch', {
+      method: 'POST',
+      body: {
+        tenant_id: tenantId,
+        data: uploadData.value
+      }
+    })
+    importResult.value = result
+    await fetchRumah()
+  } catch (error) {
+    alert(error.data?.message || 'Gagal import data')
+  } finally {
+    importing.value = false
+  }
+}
+
+function closeUpload() {
+  showUpload.value = false
+  uploadFile.value = null
+  uploadData.value = []
+  importResult.value = null
 }
 
 onMounted(() => {

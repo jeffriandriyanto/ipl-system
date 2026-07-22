@@ -3,6 +3,7 @@
     :label="label"
     icon="i-lucide-download"
     variant="outline"
+    :loading="downloading"
     @click="handleDownload"
   />
 </template>
@@ -17,12 +18,74 @@ const props = defineProps({
   label: {
     type: String,
     default: 'Download Template'
+  },
+  data: {
+    type: Array,
+    default: () => []
+  },
+  filename: {
+    type: String,
+    default: ''
+  },
+  periode: {
+    type: String,
+    default: ''
   }
 })
 
 const { downloadTemplate } = useExcel()
+const { tenantId } = useTenant()
+const downloading = ref(false)
 
-function handleDownload() {
+async function fetchMeteranData() {
+  downloading.value = true
+  try {
+    // Fetch all active rumah
+    const rumahList = await $fetch(`/api/rumah?tenant_id=${tenantId}&status=aktif`)
+    
+    // Fetch tagihan for current period to get meter_lalu
+    let meteranMap = new Map()
+    if (props.periode) {
+      try {
+        const tagihanData = await $fetch(`/api/tagihan?tenant_id=${tenantId}&periode=${props.periode}`)
+        for (const t of (tagihanData.data || [])) {
+          for (const item of (t.items || [])) {
+            if (item.tipe === 'meteran') {
+              meteranMap.set(t.rumah_id, {
+                meter_lalu: item.meter_sekarang || 0,
+                status_penghuni: t.status_penghuni
+              })
+            }
+          }
+        }
+      } catch {
+        // ignore - use empty defaults
+      }
+    }
+
+    // Build template data
+    return rumahList.map((r, index) => {
+      const meterInfo = meteranMap.get(r.id)
+      return {
+        no: index + 1,
+        blok: r.blok,
+        nomor: r.nomor,
+        status_penghuni: meterInfo?.status_penghuni || 'ada',
+        pic: r.pic_nama || '',
+        meter_lalu: meterInfo?.meter_lalu || 0,
+        meter_sekarang: '',
+        keterangan: ''
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching meteran data:', error)
+    return []
+  } finally {
+    downloading.value = false
+  }
+}
+
+async function handleDownload() {
   const templates = {
     rumah: {
       headers: [
@@ -76,8 +139,21 @@ function handleDownload() {
   }
 
   const template = templates[props.type]
-  if (template) {
-    downloadTemplate(template.headers, props.type, template.sample)
+  if (!template) return
+
+  let exportData = props.data
+
+  // For meteran, fetch data from API if not provided
+  if (props.type === 'meteran' && exportData.length === 0) {
+    exportData = await fetchMeteranData()
   }
+
+  // Fallback to sample if still empty
+  if (exportData.length === 0) {
+    exportData = template.sample
+  }
+
+  const filename = props.filename || props.type
+  downloadTemplate(template.headers, filename, exportData)
 }
 </script>

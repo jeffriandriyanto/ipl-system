@@ -6,6 +6,7 @@ export default defineEventHandler(async (event) => {
   const tenant_id = query.tenant_id as string
   const blok = query.blok as string
   const status = query.status as string
+  const has_saldo_lebih = query.has_saldo_lebih as string
 
   if (!tenant_id) {
     throw createError({
@@ -18,6 +19,7 @@ export default defineEventHandler(async (event) => {
     const where: any = { tenant_id }
     if (blok) where.blok = blok
     if (status) where.status = status
+    if (has_saldo_lebih === 'true') where.saldo_lebih = { gt: 0 }
 
     const rumah = await prisma.rumah.findMany({
       where,

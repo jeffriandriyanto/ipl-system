@@ -1,4 +1,5 @@
 import prisma from '../../utils/prisma'
+import { createAuditLog } from '../../utils/audit'
 
 // POST /api/pembayaran - Create pembayaran
 export default defineEventHandler(async (event) => {
@@ -47,6 +48,9 @@ export default defineEventHandler(async (event) => {
       })
     }
 
+    // Get rumah info for description
+    const rumah = await prisma.rumah.findUnique({ where: { id: rumah_id } })
+
     // Create pembayaran
     const pembayaran = await prisma.pembayaran.create({
       data: {
@@ -78,6 +82,14 @@ export default defineEventHandler(async (event) => {
       }
     })
 
+    // Update saldo_lebih di rumah jika ada kelebihan
+    if (selisih > 0) {
+      await prisma.rumah.update({
+        where: { id: rumah_id },
+        data: { saldo_lebih: { increment: selisih } }
+      })
+    }
+
     // Update periode stats
     const allTagihan = await prisma.tagihan.findMany({
       where: { periode_id: periodData.id }
@@ -96,6 +108,38 @@ export default defineEventHandler(async (event) => {
         jumlah_lunas: lunasCount,
         jumlah_belum: allTagihan.length - lunasCount
       }
+    })
+
+    // Auto-create kas_masuk
+    await prisma.kasTransaksi.create({
+      data: {
+        tenant_id,
+        tipe: 'masuk',
+        jumlah,
+        tanggal: new Date(tanggal),
+        keterangan: `Pembayaran IPL ${rumah?.blok || ''}-${rumah?.nomor || ''} periode ${periode}`,
+        kategori: 'iuran',
+        input_oleh: 'system'
+      }
+    })
+
+    // Audit log
+    await createAuditLog({
+      tenant_id,
+      aksi: 'create',
+      koleksi: 'pembayaran',
+      dokumen_id: pembayaran.id,
+      perubahan: {
+        after: {
+          rumah: `${rumah?.blok || ''}-${rumah?.nomor || ''}`,
+          periode,
+          jumlah,
+          metode,
+          status_tagihan: status
+        }
+      },
+      user_id: 'admin',
+      user_nama: 'Admin'
     })
 
     return pembayaran

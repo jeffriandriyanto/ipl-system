@@ -73,7 +73,7 @@
         <span class="text-sm font-bold text-green-600">{{ persenBayar }}%</span>
       </div>
       <div class="w-full bg-gray-200 rounded-full h-4">
-        <div 
+        <div
           class="bg-green-600 h-4 rounded-full transition-all duration-500"
           :style="{ width: persenBayar + '%' }"
         ></div>
@@ -153,21 +153,21 @@
           <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-arrow-down-left" class="text-green-600" />
-              <span class="text-sm font-medium">Kas Masuk</span>
+              <span class="text-sm text-black font-medium">Kas Masuk</span>
             </div>
             <span class="font-bold text-green-600">{{ formatRupiah(kasSummary.total_masuk) }}</span>
           </div>
           <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg">
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-arrow-up-right" class="text-red-600" />
-              <span class="text-sm font-medium">Kas Keluar</span>
+              <span class="text-sm text-black font-medium">Kas Keluar</span>
             </div>
             <span class="font-bold text-red-600">{{ formatRupiah(kasSummary.total_keluar) }}</span>
           </div>
           <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-wallet" class="text-blue-600" />
-              <span class="font-medium">Saldo Kas</span>
+              <span class="font-medium text-black">Saldo Kas</span>
             </div>
             <span class="font-bold text-blue-600 text-lg">{{ formatRupiah(kasSummary.saldo) }}</span>
           </div>
@@ -257,7 +257,7 @@ async function fetchDashboardData() {
     // Fetch current period tagihan
     const periodes = await $fetch(`/api/tutup-buku?tenant_id=${tenantId}`)
     const currentPeriod = periodes.find(p => p.status === 'published' || p.status === 'draft')
-    
+
     if (currentPeriod) {
       const tagihanData = await $fetch(`/api/tagihan?tenant_id=${tenantId}&periode=${currentPeriod.periode}`)
       if (tagihanData.summary) {

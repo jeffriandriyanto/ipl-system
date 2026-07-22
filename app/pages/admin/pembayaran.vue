@@ -274,8 +274,18 @@
 
     <!-- Recent Payments -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-      <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
         <h2 class="text-lg font-semibold">Riwayat Pembayaran</h2>
+        <select
+          v-model="filterPeriode"
+          class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          @change="fetchPembayaran"
+        >
+          <option value="">Semua Periode</option>
+          <option v-for="p in availablePeriodes" :key="p.periode" :value="p.periode">
+            {{ formatPeriode(p.periode) }}
+          </option>
+        </select>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full">
@@ -287,6 +297,7 @@
               <th class="text-right p-3 font-semibold text-sm">Jumlah</th>
               <th class="text-left p-3 font-semibold text-sm">Metode</th>
               <th class="text-left p-3 font-semibold text-sm">Keterangan</th>
+              <th class="text-center p-3 font-semibold text-sm">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -308,6 +319,23 @@
                 </span>
               </td>
               <td class="p-3 text-sm text-gray-500">{{ item.keterangan || '-' }}</td>
+              <td class="p-3">
+                <div class="flex justify-center gap-1">
+                  <UButton
+                    icon="i-lucide-edit"
+                    variant="ghost"
+                    size="xs"
+                    @click="openEditForm(item)"
+                  />
+                  <UButton
+                    icon="i-lucide-trash-2"
+                    variant="ghost"
+                    color="red"
+                    size="xs"
+                    @click="deletePembayaran(item)"
+                  />
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -317,6 +345,75 @@
         Belum ada pembayaran
       </div>
     </div>
+
+    <!-- Edit Modal -->
+    <UModal v-model:open="showEditForm" title="Edit Pembayaran">
+      <template #body>
+        <form @submit.prevent="handleEdit" class="space-y-4">
+          <div>
+            <label class="text-sm font-medium mb-1 block">Rumah</label>
+            <input
+              :value="editForm.rumah"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100"
+              disabled
+            />
+          </div>
+          <div>
+            <label class="text-sm font-medium mb-1 block">Periode</label>
+            <input
+              :value="editForm.periode"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100"
+              disabled
+            />
+          </div>
+          <div>
+            <label class="text-sm font-medium mb-1 block">Jumlah Bayar (Rp)</label>
+            <input
+              v-model.number="editForm.jumlah"
+              type="number"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              required
+            />
+          </div>
+          <div>
+            <label class="text-sm font-medium mb-1 block">Tanggal Bayar</label>
+            <input
+              v-model="editForm.tanggal"
+              type="date"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              required
+            />
+          </div>
+          <div>
+            <label class="text-sm font-medium mb-1 block">Metode</label>
+            <select
+              v-model="editForm.metode"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="transfer">Transfer</option>
+              <option value="cash">Cash</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-sm font-medium mb-1 block">Keterangan</label>
+            <input
+              v-model="editForm.keterangan"
+              type="text"
+              placeholder="Opsional"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+        </form>
+      </template>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UButton label="Batal" variant="ghost" @click="showEditForm = false" />
+          <UButton label="Simpan" :loading="saving" @click="handleEdit" />
+        </div>
+      </template>
+    </UModal>
 
     <!-- Upload Modal -->
     <UModal v-model:open="showUpload" title="Upload Excel Pembayaran">
@@ -351,6 +448,7 @@ const showUpload = ref(false)
 const uploadFile = ref(null)
 const uploading = ref(false)
 const uploadData = ref([])
+const filterPeriode = ref('')
 
 const form = reactive({
   rumah_id: '',
@@ -368,6 +466,18 @@ const multiForm = reactive({
   metode: 'transfer',
   keterangan: '',
   periodes: []
+})
+
+// Edit form state
+const showEditForm = ref(false)
+const editingId = ref(null)
+const editForm = reactive({
+  rumah: '',
+  periode: '',
+  jumlah: 0,
+  tanggal: '',
+  metode: 'transfer',
+  keterangan: ''
 })
 
 const { formatRupiah, getStatusColor, getStatusText } = useBilling()
@@ -479,7 +589,10 @@ async function fetchUnpaidPeriodes() {
 
 async function fetchPembayaran() {
   try {
-    const data = await $fetch(`/api/pembayaran?tenant_id=${tenantId}`)
+    const params = new URLSearchParams({ tenant_id: tenantId })
+    if (filterPeriode.value) params.append('periode', filterPeriode.value)
+    
+    const data = await $fetch(`/api/pembayaran?${params}`)
     pembayaranList.value = data
   } catch (error) {
     console.error('Error fetching pembayaran:', error)
@@ -632,6 +745,52 @@ async function handleUpload() {
   }
 }
 
+// Edit & Delete functions
+function openEditForm(item) {
+  editingId.value = item.id
+  editForm.rumah = `${item.rumah?.blok}-${item.rumah?.nomor}`
+  editForm.periode = formatPeriode(item.periode)
+  editForm.jumlah = item.jumlah
+  editForm.tanggal = new Date(item.tanggal).toISOString().slice(0, 10)
+  editForm.metode = item.metode
+  editForm.keterangan = item.keterangan || ''
+  showEditForm.value = true
+}
+
+async function handleEdit() {
+  saving.value = true
+  try {
+    await $fetch(`/api/pembayaran/${editingId.value}`, {
+      method: 'PUT',
+      body: {
+        jumlah: editForm.jumlah,
+        tanggal: editForm.tanggal,
+        metode: editForm.metode,
+        keterangan: editForm.keterangan
+      }
+    })
+    showEditForm.value = false
+    alert('Pembayaran berhasil diupdate')
+    await fetchPembayaran()
+  } catch (error) {
+    alert(error.data?.message || 'Gagal mengupdate pembayaran')
+  } finally {
+    saving.value = false
+  }
+}
+
+async function deletePembayaran(item) {
+  if (!confirm(`Hapus pembayaran ${item.rumah?.blok}-${item.rumah?.nomor} periode ${formatPeriode(item.periode)} sebesar ${formatRupiah(item.jumlah)}?`)) return
+
+  try {
+    await $fetch(`/api/pembayaran/${item.id}`, { method: 'DELETE' })
+    alert('Pembayaran berhasil dihapus')
+    await fetchPembayaran()
+  } catch (error) {
+    alert(error.data?.message || 'Gagal menghapus pembayaran')
+  }
+}
+
 // Watch for changes
 watch(() => [form.rumah_id, form.periode], () => {
   fetchTagihanInfo()
@@ -640,6 +799,12 @@ watch(() => [form.rumah_id, form.periode], () => {
 onMounted(() => {
   fetchRumah()
   fetchPeriodes()
+  
+  // Default filter ke bulan ini
+  const now = new Date()
+  const currentPeriode = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  filterPeriode.value = currentPeriode
+  
   fetchPembayaran()
 })
 </script>

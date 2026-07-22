@@ -1,4 +1,5 @@
 import prisma from '../../utils/prisma'
+import { createAuditLog } from '../../utils/audit'
 
 // DELETE /api/rumah/:id - Delete rumah
 export default defineEventHandler(async (event) => {
@@ -50,6 +51,19 @@ export default defineEventHandler(async (event) => {
 
     await prisma.rumah.delete({
       where: { id }
+    })
+
+    // Audit log
+    await createAuditLog({
+      tenant_id: existing.tenant_id,
+      aksi: 'delete',
+      koleksi: 'rumah',
+      dokumen_id: id,
+      perubahan: {
+        before: { blok: existing.blok, nomor: existing.nomor, tipe: existing.tipe, pic_nama: existing.pic_nama }
+      },
+      user_id: 'admin',
+      user_nama: 'Admin'
     })
 
     return { message: 'Rumah berhasil dihapus' }

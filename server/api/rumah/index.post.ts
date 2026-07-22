@@ -1,4 +1,5 @@
 import prisma from '../../utils/prisma'
+import { createAuditLog } from '../../utils/audit'
 
 // POST /api/rumah - Create new rumah
 export default defineEventHandler(async (event) => {
@@ -74,6 +75,19 @@ export default defineEventHandler(async (event) => {
         kategori_iuran,
         keterangan: keterangan || null
       }
+    })
+
+    // Audit log
+    await createAuditLog({
+      tenant_id,
+      aksi: 'create',
+      koleksi: 'rumah',
+      dokumen_id: rumah.id,
+      perubahan: {
+        after: { blok, nomor, tipe, status: status || 'aktif', pic_nama }
+      },
+      user_id: 'admin',
+      user_nama: 'Admin'
     })
 
     return rumah

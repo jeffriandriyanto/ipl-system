@@ -1,4 +1,5 @@
 import prisma from '../../utils/prisma'
+import { createAuditLog } from '../../utils/audit'
 
 // PUT /api/rumah/:id - Update rumah
 export default defineEventHandler(async (event) => {
@@ -83,6 +84,20 @@ export default defineEventHandler(async (event) => {
     const rumah = await prisma.rumah.update({
       where: { id },
       data: updateData
+    })
+
+    // Audit log
+    await createAuditLog({
+      tenant_id: existing.tenant_id,
+      aksi: 'update',
+      koleksi: 'rumah',
+      dokumen_id: id,
+      perubahan: {
+        before: { blok: existing.blok, nomor: existing.nomor, tipe: existing.tipe, status: existing.status },
+        after: updateData
+      },
+      user_id: 'admin',
+      user_nama: 'Admin'
     })
 
     return rumah
