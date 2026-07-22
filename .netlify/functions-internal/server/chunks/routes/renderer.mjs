@@ -2,7 +2,9 @@ import { u as useRuntimeConfig, e as encodePath, f as buildAssetsURL, i as publi
 import { createHead as createHead$1, propsToString, renderSSRHead } from 'unhead/server';
 import { isRef, toValue } from 'vue';
 import { DeprecationsPlugin, PromisesPlugin, TemplateParamsPlugin, AliasSortingPlugin } from 'unhead/plugins';
+import { defineDiagnostics, createConsoleReporter } from 'nostics';
 import { createRenderer, getRequestDependencies, getPreloadLinks, getPrefetchLinks } from 'vue-bundle-renderer/runtime';
+import { renderToString } from 'vue/server-renderer';
 import { stringify, uneval } from 'devalue';
 import '@prisma/client';
 import 'node:http';
@@ -15,6 +17,38 @@ import 'node:crypto';
 import 'node:async_hooks';
 import '@iconify/utils';
 import 'consola';
+
+/**
+* E8xxx
+* Nitro server runtime (SSR rendering / dev server) diagnostics.
+*/
+const docsBase = (code) => `https://nuxt.com/docs/4.x/errors/${code.replace("NUXT_", "").toLowerCase()}`;
+const serverDiagnostics = /* #__PURE__ */ defineDiagnostics({
+	docsBase,
+	reporters: [/* @__PURE__ */ createConsoleReporter(void 0)],
+	codes: {
+		NUXT_E8001: {
+			why: (p) => `\`render:html\` mutated \`body\`/\`bodyAppend\` while streaming (\`${p.path}\`). These fields are silently dropped because the body is about to stream.`,
+			fix: "Use the `render:html:close` hook instead.",
+			docs: false
+		},
+		NUXT_E8002: {
+			why: (p) => `SSR streaming committed the response before render completed (\`${p.path}\`). The following mutations did not reach the client and were dropped:\n  - ${p.mutations}`,
+			fix: (p) => `Move the mutation into a plugin (which runs before the shell is flushed), or opt this route out of streaming with \`routeRules: { '${p.path}': { streaming: false } }\` or the \`render:route\` hook.`,
+			docs: false
+		},
+		NUXT_E8003: {
+			why: (p) => `Failed to stringify dev server logs.${p.error ? ` Received \`${p.error}\`.` : ""}`,
+			fix: "You can define your own reducer/reviver for rich types following the instructions in `https://nuxt.com/docs/4.x/api/composables/use-nuxt-app#payload`.",
+			docs: false
+		},
+		NUXT_E8004: {
+			why: "The server bundle is not available.",
+			fix: "Ensure the Nuxt build completed successfully and the server entry was emitted by your builder.",
+			docs: false
+		}
+	}
+});
 
 const NUXT_RUNTIME_PAYLOAD_EXTRACTION = false;
 const NUXT_SSR_STREAMING = false;
@@ -67,7 +101,7 @@ function createSSRContext(event) {
 		url,
 		event,
 		runtimeConfig: useRuntimeConfig(event),
-		noSSR: true,
+		noSSR: event.context.nuxt?.noSSR || (false),
 		head: createHead(unheadOptions),
 		error: false,
 		nuxt: void 0,
@@ -116,7 +150,23 @@ globalThis.__buildAssetsURL = buildAssetsURL;
 globalThis.__publicAssetsURL = publicAssetsURL;
 const APP_ROOT_OPEN_TAG = `<${appRootTag}${propsToString(appRootAttrs)}>`;
 const APP_ROOT_CLOSE_TAG = `</${appRootTag}>`;
+const getServerEntry = () => import('../virtual/entry.mjs').then(function (n) { return n.S; }).then((r) => r.default || r);
 const getPrecomputedDependencies = () => import('../virtual/precomputed.mjs').then((r) => "default" in r ? r.default : r).then((r) => typeof r === "function" ? r() : r);
+const getSSRRenderer = lazyCachedFunction(async () => {
+	const createSSRApp = await getServerEntry();
+	if (!createSSRApp) throw serverDiagnostics.NUXT_E8004();
+	const renderer = createRenderer(createSSRApp, {
+		precomputed: await getPrecomputedDependencies(),
+		manifest: void 0,
+		renderToString: renderToString$1,
+		buildAssetsURL
+	});
+	async function renderToString$1(input, context) {
+		const html = await renderToString(input, context);
+		return APP_ROOT_OPEN_TAG + html + APP_ROOT_CLOSE_TAG;
+	}
+	return renderer;
+});
 const getSPARenderer = lazyCachedFunction(async () => {
 	const precomputed = await getPrecomputedDependencies();
 	const spaTemplate = await import('../virtual/_virtual_spa-template.mjs').then((r) => r.template).catch(() => "").then((r) => {
@@ -149,7 +199,18 @@ const getSPARenderer = lazyCachedFunction(async () => {
 	};
 });
 function getRenderer(ssrContext) {
-	return getSPARenderer() ;
+	return ssrContext.noSSR ? getSPARenderer() : getSSRRenderer();
+}
+const getSSRStyles = lazyCachedFunction(() => import('../virtual/styles.mjs').then((r) => r.default || r));
+
+//#region src/runtime/utils/renderer/inline-styles.ts
+async function renderInlineStyles(usedModules) {
+	const styleMap = await getSSRStyles();
+	const inlinedStyles = /* @__PURE__ */ new Set();
+	const promises = [];
+	for (const mod of usedModules) if (mod in styleMap && styleMap[mod]) promises.push(styleMap[mod]());
+	for (const styles of await Promise.all(promises)) for (const style of styles) inlinedStyles.add(style);
+	return Array.from(inlinedStyles).map((style) => ({ innerHTML: style }));
 }
 
 function renderPayloadJsonScript(opts) {
@@ -157,7 +218,7 @@ function renderPayloadJsonScript(opts) {
 		"type": "application/json",
 		"innerHTML": opts.data ? encodeForwardSlashes(stringify(opts.data, opts.ssrContext["~payloadReducers"])) : "",
 		"data-nuxt-data": appId,
-		"data-ssr": false
+		"data-ssr": !(opts.ssrContext.noSSR)
 	};
 	payload.id = "__NUXT_DATA__";
 	if (opts.src) payload["data-src"] = opts.src;
@@ -175,7 +236,9 @@ function encodeForwardSlashes(str) {
 
 const renderSSRHeadOptions = {"omitLineBreaks":true};
 
-const entryFileName = "DG7VdTMY.js";
+const entryIds = [];
+
+const entryFileName = "CoNGuUrB.js";
 
 const _DRIVE_LETTER_START_RE = /^[A-Za-z]:\//;
 function normalizeWindowsPath(input = "") {
@@ -320,7 +383,8 @@ async function renderRoute(event, ssrError) {
 	const routeOptions = getRouteRules(event);
 	if (routeOptions.ssr === false) ssrContext.noSSR = true;
 	!ssrContext.noSSR && (NUXT_RUNTIME_PAYLOAD_EXTRACTION);
-	const renderer = await getRenderer();
+	const renderer = await getRenderer(ssrContext);
+	for (const id of entryIds) ssrContext.modules.add(id);
 	const canStream = NUXT_SSR_STREAMING;
 	const renderRouteContext = {
 		canStream,
@@ -333,7 +397,7 @@ async function renderRoute(event, ssrError) {
 		await ssrContext.nuxt?.hooks.callHook("app:error", _err);
 		throw _err;
 	});
-	const inlinedStyles = [];
+	const inlinedStyles = !ssrContext["~renderResponse"] && !ssrContext._renderResponse && true ? await renderInlineStyles(ssrContext.modules ?? []) : [];
 	await ssrContext.nuxt?.hooks.callHook("app:rendered", {
 		ssrContext,
 		renderResult: _rendered

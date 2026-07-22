@@ -32,8 +32,6 @@ export default defineNuxtConfig({
     }
   },
 
-  ssr: false,
-
   routeRules: {
     '/': { redirect: '/cek-tagihan' }
   },
