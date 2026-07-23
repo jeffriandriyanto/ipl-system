@@ -20,7 +20,7 @@ export default defineNuxtConfig({
       ]
     }
   },
-  css: ['~/assets/css/main.css'],
+  css: ['@/assets/css/main.css'],
 
   runtimeConfig: {
     authSecret: process.env.NUXT_AUTH_SECRET || 'super-secret',
@@ -38,12 +38,12 @@ export default defineNuxtConfig({
 
   compatibilityDate: '2026-06-30',
 
-  nitro: {
-    preset: 'netlify',
-    experimental: {
-      asyncContext: true
-    }
-  },
+  // nitro: {
+  //   preset: 'netlify',
+  //   experimental: {
+  //     asyncContext: true
+  //   }
+  // },
 
   eslint: {
     config: {
