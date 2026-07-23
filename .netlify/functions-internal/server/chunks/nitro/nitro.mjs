@@ -6,7 +6,6 @@ import { Buffer as Buffer$1 } from 'node:buffer';
 import { promises, existsSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { AsyncLocalStorage } from 'node:async_hooks';
 import { getIcons } from '@iconify/utils';
 import { consola } from 'consola';
 
@@ -4409,7 +4408,7 @@ function _expandFromEnv(value) {
 const _inlineRuntimeConfig = {
   "app": {
     "baseURL": "/",
-    "buildId": "d41f8aaa-69c5-463a-bd62-7782139b46da",
+    "buildId": "8cf2e7ef-7a5f-4224-8dd9-8787737c1a2f",
     "buildAssetsDir": "/_nuxt/",
     "cdnURL": ""
   },
@@ -4603,9 +4602,9 @@ const getContext = (key, opts = {}) => defaultNamespace.get(key, opts);
 const asyncHandlersKey = "__unctx_async_handlers__";
 const asyncHandlers = _globalThis[asyncHandlersKey] || (_globalThis[asyncHandlersKey] = /* @__PURE__ */ new Set());
 
-const nitroAsyncContext = getContext("nitro-app", {
-  asyncContext: true,
-  AsyncLocalStorage: AsyncLocalStorage 
+getContext("nitro-app", {
+  asyncContext: false,
+  AsyncLocalStorage: void 0
 });
 
 function isPathInScope(pathname, base) {
@@ -5209,13 +5208,6 @@ function createNitroApp() {
     }
   }
   h3App.use(config.app.baseURL, router.handler);
-  {
-    const _handler = h3App.handler;
-    h3App.handler = (event) => {
-      const ctx = { event };
-      return nitroAsyncContext.callAsync(ctx, () => _handler(event));
-    };
-  }
   const app = {
     hooks,
     h3App,

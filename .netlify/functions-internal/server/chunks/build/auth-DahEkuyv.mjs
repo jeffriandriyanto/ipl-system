@@ -11,7 +11,6 @@ import 'node:buffer';
 import 'node:fs';
 import 'node:path';
 import 'node:crypto';
-import 'node:async_hooks';
 import '@iconify/utils';
 import 'consola';
 import 'vue-router';
