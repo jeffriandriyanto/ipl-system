@@ -22,10 +22,9 @@ export const useBilling = () => {
     const pemakaian = meterSekarang - meterLalu
 
     if (pemakaian < 0) return 0
-    if (pemakaian <= minimumKuota) return minimumTarif
+    if (pemakaian < minimumKuota) return minimumTarif
 
-    const kelebihan = pemakaian - minimumKuota
-    return minimumTarif + (kelebihan * tarifPerM3)
+    return pemakaian * tarifPerM3
   }
 
   const getStatusColor = (status: string): string => {

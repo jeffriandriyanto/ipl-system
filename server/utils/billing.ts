@@ -47,12 +47,11 @@ export function hitungTagihanKategori(
     return 0
   }
 
-  if (pemakaian <= kategori.minimum_kuota) {
+  if (pemakaian < kategori.minimum_kuota) {
     return kategori.minimum_tarif
   }
 
-  const kelebihan = pemakaian - kategori.minimum_kuota
-  return kategori.minimum_tarif + (kelebihan * kategori.tarif_per_m3)
+  return pemakaian * kategori.tarif_per_m3
 }
 
 /**
